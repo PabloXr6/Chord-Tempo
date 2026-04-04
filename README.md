@@ -1,26 +1,23 @@
-🎸 Chord Tempo Setup Guide
-Halo! Jika kamu ingin mencoba proyek ini, ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi di komputer lokal kamu.
+# 🎸 Chord Tempo - Precision Metronome & Chord Interface
 
-📋 Prasyarat
-Pastikan kamu sudah menginstal:
+**Chord Tempo** adalah aplikasi web interaktif untuk musisi yang menggabungkan metronom presisi tinggi, pemutar audio sinkron dari Supabase, dan penampil chord otomatis. Proyek ini dibangun menggunakan **Next.js 15**, **Tailwind CSS**, dan **Supabase**.
 
-Node.js (Versi 18 atau terbaru)
+---
 
-NPM atau Yarn
+## 🚀 Langkah-langkah Setup (Untuk Developer Baru)
 
-Akun Supabase (Gratis)
+Jika kamu baru saja melakukan `git clone`, ikuti panduan di bawah ini agar aplikasi berjalan sempurna di komputer lokalmu.
 
-🛠️ Langkah 1: Instalasi Library
-Buka terminal di folder proyek, lalu jalankan:
-
-Bash
+### 1. Instalasi Dependensi
+Pastikan kamu sudah menginstal Node.js (v18+). Buka terminal di root folder proyek dan jalankan:
+```bash
 npm install
-🔗 Langkah 2: Konfigurasi Supabase (Database)
-Aplikasi ini membutuhkan database PostgreSQL dan Storage dari Supabase.
+2. Konfigurasi Database (Supabase)
+Proyek ini menggunakan Supabase untuk menyimpan data lagu dan file audio.
 
-Buat Project Baru di Supabase Dashboard.
+Buat proyek baru di Supabase Dashboard.
 
-SQL Editor: Masuk ke menu SQL Editor dan jalankan perintah ini untuk membuat tabel:
+Jalankan Query SQL berikut di SQL Editor untuk membuat tabel:
 
 SQL
 -- Tabel Utama Lagu
@@ -31,7 +28,7 @@ CREATE TABLE songs (
   slug TEXT UNIQUE,
   bpm INTEGER DEFAULT 120,
   time_signature TEXT DEFAULT '4/4',
-  audio_url TEXT, -- Link MP3 dari Storage
+  audio_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -39,48 +36,65 @@ CREATE TABLE songs (
 CREATE TABLE chord_articles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   song_id UUID REFERENCES songs(id) ON DELETE CASCADE,
-  content TEXT, -- Format: [C]Mimpi adalah [D]kunci
+  content TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-Storage Setup:
+3. Setup Storage (Untuk Audio MP3)
+Agar musik bisa diputar:
 
-Pergi ke menu Storage.
+Masuk ke menu Storage di Supabase.
 
-Buat Bucket baru dengan nama song-tracks.
+Buat Bucket baru bernama song-tracks.
 
-PENTING: Ubah akses Bucket menjadi Public.
+PENTING: Klik kanan pada bucket tersebut -> Make Public.
 
-Upload file .mp3 lagu kamu ke sini, lalu salin "Public URL"-nya ke kolom audio_url di tabel songs.
+Upload file .mp3 lagu kamu ke sana.
 
-🔑 Langkah 3: Setup Environment Variables
-Buat file baru bernama .env.local di root folder proyek.
+Salin Public URL file tersebut dan masukkan ke kolom audio_url di tabel songs pada baris lagu yang bersangkutan.
 
-Isi dengan API Key dari Supabase kamu (Cek di Settings > API):
+4. Konfigurasi Environment Variables
+Buat file baru bernama .env.local di root folder proyek (sejajar dengan package.json) dan masukkan API Key Supabase kamu:
 
 Cuplikan kode
-NEXT_PUBLIC_SUPABASE_URL=https://id-proyek-kamu.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-🚦 Langkah 4: Menjalankan Aplikasi
-Setelah semua siap, jalankan perintah:
+NEXT_PUBLIC_SUPABASE_URL=[https://your-project-id.supabase.co](https://your-project-id.supabase.co)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+5. Menjalankan Aplikasi
+Setelah semua siap, jalankan server development:
 
 Bash
 npm run dev
-Buka http://localhost:3000 di browser kamu.
+Buka http://localhost:3000 di browsermu.
 
-📝 Catatan Penting untuk Pengisian Data
-Agar fitur Auto Scroll dan Metronom sinkron, pastikan data di tabel songs diisi dengan benar:
+✨ Fitur Utama
+Precision Metronome Engine: Menggunakan Web Audio API untuk ketukan yang sangat akurat tanpa lagging.
 
-BPM: Isi sesuai tempo asli lagu (Gunakan fitur Tap Tempo di aplikasi untuk mengeceknya).
+Audio Mixer: Kontrol volume metronom dan volume lagu MP3 secara terpisah.
 
-Audio URL: Pastikan link berakhiran .mp3 dan bisa diakses secara publik.
+Sync Offset: Fitur untuk menyesuaikan delay (ms) jika ketukan lagu dan metronom belum pas.
 
-Format Chord: Gunakan kurung siku tepat di atas atau di depan lirik.
+Interactive Chord Display:
 
-Contoh: [C]Menarilah dan [D]terus tertawa
+Transpose: Ubah nada dasar (Key) seluruh chord secara instan.
 
-🛠️ Troubleshooting
-Suara Tidak Keluar? Cek apakah browser memblokir Autoplay. Klik area mana saja di halaman web sebelum menekan tombol Play.
+Auto Scroll: Layar chord bergeser otomatis mengikuti BPM lagu saat tombol Play ditekan.
 
-Error CORS? Di Supabase, masuk ke Settings > API > API Settings, lalu tambahkan * atau http://localhost:3000 pada bagian Allowed Origins.
+Font Scaling: Atur ukuran teks chord untuk visibilitas saat latihan.
 
-Selamat Ber-jamming! 🤘
+📝 Panduan Penulisan Chord
+Agar fitur Transpose dan pewarnaan chord berfungsi, tuliskan chord di dalam kurung siku [] pada kolom content di tabel chord_articles.
+
+Contoh Format:
+
+Plaintext
+[Intro]
+[A]  [D]  [A]  [D]
+
+[Verse]
+[A]Mimpi adalah [D]kunci
+[Bm]Untuk kita [E]menaklukkan dunia
+⚠️ Troubleshooting
+Suara Tidak Keluar? Browser memblokir suara otomatis. Klik area mana saja di halaman web terlebih dahulu sebelum menekan tombol Play.
+
+Error CORS? Di Supabase Dashboard, masuk ke Settings -> API, lalu tambahkan http://localhost:3000 ke bagian Allowed Origins.
+
+Metronom & Lagu Tidak Pas? Gunakan slider Sync Offset di bagian Mixer Audio untuk menyelaraskannya.
