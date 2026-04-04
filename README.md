@@ -1,93 +1,109 @@
 # 🎸 Chord Tempo - Precision Metronome & Chord Interface
 
-**Chord Tempo** adalah aplikasi web interaktif untuk musisi yang menggabungkan metronom presisi tinggi, pemutar audio sinkron dari Supabase, dan penampil chord otomatis. Proyek ini dibangun menggunakan **Next.js 15**, **Tailwind CSS**, dan **Supabase**.
+**Chord Tempo** adalah aplikasi web untuk musisi yang menggabungkan metronom presisi tinggi, pemutar audio, dan penampil chord otomatis. Proyek ini dibangun menggunakan **Next.js 15**, **Tailwind CSS**, dan **Supabase**.
 
 ---
 
-## 🚀 Langkah-langkah Setup (Untuk Developer Baru)
+## 🚀 Langkah-langkah Setup
 
-Jika kamu baru saja melakukan `git clone`, ikuti panduan di bawah ini agar aplikasi berjalan sempurna di komputer lokalmu.
+Panduan ini dibuat untuk teman yang baru saja men-clone repo dan ingin menjalankan aplikasi secara lokal.
 
-### 1. Instalasi Dependensi
-Pastikan kamu sudah menginstal Node.js (v18+). Buka terminal di root folder proyek dan jalankan:
+### 1. Clone Repository
+
+Jalankan perintah berikut di terminal:
+
+```bash
+git clone https://github.com/<username>/chordtempo-next.git
+cd chordtempo-next
+```
+
+### 2. Install Dependensi
+
+Pastikan Node.js sudah terpasang (disarankan v18 atau lebih baru), lalu jalankan:
+
 ```bash
 npm install
-2. Konfigurasi Database (Supabase)
-Buat proyek baru di Supabase Dashboard.
+```
 
-Jalankan Query SQL berikut di SQL Editor untuk membuat tabel:
+### 3. Siapkan Supabase
 
-SQL
--- Tabel Utama Lagu
-CREATE TABLE songs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  title TEXT NOT NULL,
-  artist TEXT,
-  slug TEXT UNIQUE,
-  bpm INTEGER DEFAULT 120,
-  time_signature TEXT DEFAULT '4/4',
-  audio_url TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+Aplikasi menggunakan Supabase untuk penyimpanan dan autentikasi.
+
+1. Buka https://app.supabase.com dan buat proyek baru.
+2. Salin `Project URL` dan `anon public key` dari halaman Settings -> API.
+3. Buat tabel data jika diperlukan. Contoh struktur tabel sederhana:
+
+```sql
+create table songs (
+  id uuid primary key default uuid_generate_v4(),
+  title text not null,
+  artist text,
+  slug text unique,
+  bpm integer default 120,
+  time_signature text default '4/4',
+  audio_url text,
+  created_at timestamp with time zone default now()
 );
 
--- Tabel Artikel Chord (Lirik)
-CREATE TABLE chord_articles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  song_id UUID REFERENCES songs(id) ON DELETE CASCADE,
-  content TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+create table chord_articles (
+  id uuid primary key default uuid_generate_v4(),
+  song_id uuid references songs(id) on delete cascade,
+  content text,
+  created_at timestamp with time zone default now()
 );
-3. Setup Storage (Untuk Audio MP3)
-Masuk ke menu Storage di Supabase.
+```
 
-Buat Bucket baru bernama song-tracks.
+4. Jika ingin menggunakan audio MP3 di Supabase Storage:
+   - Buat bucket baru (misalnya `song-tracks`).
+   - Atur bucket menjadi publik jika ingin mengakses file dari aplikasi.
+   - Upload file `.mp3` dan gunakan URL publiknya pada kolom `audio_url` di tabel `songs`.
 
-PENTING: Klik kanan pada bucket tersebut -> Make Public.
+### 4. Buat `.env.local`
 
-Upload file .mp3 lagu kamu ke sana.
+Di root folder proyek, buat file baru bernama `.env.local` dan isi nilai Supabase:
 
-Salin Public URL file tersebut dan masukkan ke kolom audio_url di tabel songs.
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project-id>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+```
 
-4. Konfigurasi Environment Variables
-Buat file baru bernama .env.local di root folder proyek dan masukkan API Key Supabase kamu:
+> Jika menggunakan Supabase Auth atau fitur tambahan lain, periksa file `src/lib/pocketbaseClient.js` atau `src/utils/supabase/` untuk variabel environment tambahan.
 
-Cuplikan kode
-NEXT_PUBLIC_SUPABASE_URL=[https://your-project-id.supabase.co](https://your-project-id.supabase.co)
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-5. Menjalankan Aplikasi
-Setelah semua siap, jalankan server development:
+### 5. Jalankan Aplikasi
 
-Bash
+Setelah semua selesai, jalankan server development:
+
+```bash
 npm run dev
-Buka http://localhost:3000 di browsermu.
+```
 
-✨ Fitur Utama
-Precision Metronome Engine: Menggunakan Web Audio API untuk ketukan yang akurat tanpa lagging.
+Buka `http://localhost:3000` di browser.
 
-Audio Mixer: Kontrol volume metronom dan volume lagu MP3 secara terpisah.
+### 6. Hal yang Perlu Dicek jika Gagal
 
-Sync Offset: Menyesuaikan delay (ms) agar ketukan lagu dan metronom sinkron.
+- Pastikan `.env.local` ada di root proyek.
+- Pastikan `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` sesuai dengan proyek Supabase.
+- Jika ada masalah CORS, tambahkan `http://localhost:3000` ke daftar `Allowed Origins` di Supabase Settings -> API.
+- Jika audio tidak muncul, pastikan URL file `.mp3` sudah benar dan bucket Storage bersifat publik.
 
-Interactive Chord Display:
+---
 
-Transpose: Ubah nada dasar (Key) secara instan.
+## 📌 Catatan Tambahan
 
-Auto Scroll: Layar bergeser otomatis mengikuti BPM lagu.
+- Aplikasi menggunakan **Next.js App Router** dan file konfigurasi berada di `src/app/`.
+- Halaman utama berada di `src/app/page.js`.
+- Komponen UI utama berada di `src/components/`.
+- Jika kamu ingin menambahkan lagu baru, isi data di tabel `songs` dan `chord_articles`.
 
-Font Scaling: Atur ukuran teks chord untuk visibilitas.
+---
 
-📝 Panduan Penulisan Chord
-Gunakan format kurung siku [] pada kolom content di tabel chord_articles.
+## 💡 Cara Menjalankan di Production
 
-Contoh:
+Untuk build production:
 
-Plaintext
-[A]Mimpi adalah [D]kunci
-[Bm]Untuk kita [E]menaklukkan dunia
-⚠️ Troubleshooting
-Suara Tidak Keluar? Klik area mana saja di halaman web sebelum menekan tombol Play.
+```bash
+npm run build
+npm run start
+```
 
-Error CORS? Di Supabase -> Settings -> API, tambahkan http://localhost:3000 ke Allowed Origins.
-
-### Tips Terakhir:
-Setelah file ini disimpan sebagai `README.md`, saat kamu meng-upload (push) ke GitHub, halaman depan repositori kamu akan otomatis berubah menjadi tampilan yang rapi lengkap dengan logo, format kode, dan poin-poin fitur tersebut. 🤘🚀
+Selamat mencoba! Jika butuh bantuan, tinggal tanya lagi. 😊
