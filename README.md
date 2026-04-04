@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+🎸 Chord Tempo Setup Guide
+Halo! Jika kamu ingin mencoba proyek ini, ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi di komputer lokal kamu.
 
-## Getting Started
+📋 Prasyarat
+Pastikan kamu sudah menginstal:
 
-First, run the development server:
+Node.js (Versi 18 atau terbaru)
 
-```bash
+NPM atau Yarn
+
+Akun Supabase (Gratis)
+
+🛠️ Langkah 1: Instalasi Library
+Buka terminal di folder proyek, lalu jalankan:
+
+Bash
+npm install
+🔗 Langkah 2: Konfigurasi Supabase (Database)
+Aplikasi ini membutuhkan database PostgreSQL dan Storage dari Supabase.
+
+Buat Project Baru di Supabase Dashboard.
+
+SQL Editor: Masuk ke menu SQL Editor dan jalankan perintah ini untuk membuat tabel:
+
+SQL
+-- Tabel Utama Lagu
+CREATE TABLE songs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  artist TEXT,
+  slug TEXT UNIQUE,
+  bpm INTEGER DEFAULT 120,
+  time_signature TEXT DEFAULT '4/4',
+  audio_url TEXT, -- Link MP3 dari Storage
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabel Artikel Chord (Lirik)
+CREATE TABLE chord_articles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  song_id UUID REFERENCES songs(id) ON DELETE CASCADE,
+  content TEXT, -- Format: [C]Mimpi adalah [D]kunci
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+Storage Setup:
+
+Pergi ke menu Storage.
+
+Buat Bucket baru dengan nama song-tracks.
+
+PENTING: Ubah akses Bucket menjadi Public.
+
+Upload file .mp3 lagu kamu ke sini, lalu salin "Public URL"-nya ke kolom audio_url di tabel songs.
+
+🔑 Langkah 3: Setup Environment Variables
+Buat file baru bernama .env.local di root folder proyek.
+
+Isi dengan API Key dari Supabase kamu (Cek di Settings > API):
+
+Cuplikan kode
+NEXT_PUBLIC_SUPABASE_URL=https://id-proyek-kamu.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+🚦 Langkah 4: Menjalankan Aplikasi
+Setelah semua siap, jalankan perintah:
+
+Bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Buka http://localhost:3000 di browser kamu.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+📝 Catatan Penting untuk Pengisian Data
+Agar fitur Auto Scroll dan Metronom sinkron, pastikan data di tabel songs diisi dengan benar:
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+BPM: Isi sesuai tempo asli lagu (Gunakan fitur Tap Tempo di aplikasi untuk mengeceknya).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Audio URL: Pastikan link berakhiran .mp3 dan bisa diakses secara publik.
 
-## Learn More
+Format Chord: Gunakan kurung siku tepat di atas atau di depan lirik.
 
-To learn more about Next.js, take a look at the following resources:
+Contoh: [C]Menarilah dan [D]terus tertawa
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+🛠️ Troubleshooting
+Suara Tidak Keluar? Cek apakah browser memblokir Autoplay. Klik area mana saja di halaman web sebelum menekan tombol Play.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Error CORS? Di Supabase, masuk ke Settings > API > API Settings, lalu tambahkan * atau http://localhost:3000 pada bagian Allowed Origins.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Selamat Ber-jamming! 🤘
