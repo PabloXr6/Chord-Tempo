@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🎸 Chord Tempo - Precision Metronome & Chord Interface
 
-## Getting Started
+**Chord Tempo** adalah aplikasi web interaktif untuk musisi yang menggabungkan metronom presisi tinggi, pemutar audio sinkron dari Supabase, dan penampil chord otomatis. Proyek ini dibangun menggunakan **Next.js 15**, **Tailwind CSS**, dan **Supabase**.
 
-First, run the development server:
+---
 
+## 🚀 Langkah-langkah Setup (Untuk Developer Baru)
+
+Jika kamu baru saja melakukan `git clone`, ikuti panduan di bawah ini agar aplikasi berjalan sempurna di komputer lokalmu.
+
+### 1. Instalasi Dependensi
+Pastikan kamu sudah menginstal Node.js (v18+). Buka terminal di root folder proyek dan jalankan:
 ```bash
+npm install
+2. Konfigurasi Database (Supabase)
+Buat proyek baru di Supabase Dashboard.
+
+Jalankan Query SQL berikut di SQL Editor untuk membuat tabel:
+
+SQL
+-- Tabel Utama Lagu
+CREATE TABLE songs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  artist TEXT,
+  slug TEXT UNIQUE,
+  bpm INTEGER DEFAULT 120,
+  time_signature TEXT DEFAULT '4/4',
+  audio_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabel Artikel Chord (Lirik)
+CREATE TABLE chord_articles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  song_id UUID REFERENCES songs(id) ON DELETE CASCADE,
+  content TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+3. Setup Storage (Untuk Audio MP3)
+Masuk ke menu Storage di Supabase.
+
+Buat Bucket baru bernama song-tracks.
+
+PENTING: Klik kanan pada bucket tersebut -> Make Public.
+
+Upload file .mp3 lagu kamu ke sana.
+
+Salin Public URL file tersebut dan masukkan ke kolom audio_url di tabel songs.
+
+4. Konfigurasi Environment Variables
+Buat file baru bernama .env.local di root folder proyek dan masukkan API Key Supabase kamu:
+
+Cuplikan kode
+NEXT_PUBLIC_SUPABASE_URL=[https://your-project-id.supabase.co](https://your-project-id.supabase.co)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+5. Menjalankan Aplikasi
+Setelah semua siap, jalankan server development:
+
+Bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Buka http://localhost:3000 di browsermu.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+✨ Fitur Utama
+Precision Metronome Engine: Menggunakan Web Audio API untuk ketukan yang akurat tanpa lagging.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+Audio Mixer: Kontrol volume metronom dan volume lagu MP3 secara terpisah.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Sync Offset: Menyesuaikan delay (ms) agar ketukan lagu dan metronom sinkron.
 
-## Learn More
+Interactive Chord Display:
 
-To learn more about Next.js, take a look at the following resources:
+Transpose: Ubah nada dasar (Key) secara instan.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Auto Scroll: Layar bergeser otomatis mengikuti BPM lagu.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Font Scaling: Atur ukuran teks chord untuk visibilitas.
 
-## Deploy on Vercel
+📝 Panduan Penulisan Chord
+Gunakan format kurung siku [] pada kolom content di tabel chord_articles.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Contoh:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Plaintext
+[A]Mimpi adalah [D]kunci
+[Bm]Untuk kita [E]menaklukkan dunia
+⚠️ Troubleshooting
+Suara Tidak Keluar? Klik area mana saja di halaman web sebelum menekan tombol Play.
+
+Error CORS? Di Supabase -> Settings -> API, tambahkan http://localhost:3000 ke Allowed Origins.
+
+### Tips Terakhir:
+Setelah file ini disimpan sebagai `README.md`, saat kamu meng-upload (push) ke GitHub, halaman depan repositori kamu akan otomatis berubah menjadi tampilan yang rapi lengkap dengan logo, format kode, dan poin-poin fitur tersebut. 🤘🚀
