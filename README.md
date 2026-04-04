@@ -1,100 +1,109 @@
 # 🎸 Chord Tempo - Precision Metronome & Chord Interface
 
-**Chord Tempo** adalah aplikasi web interaktif untuk musisi yang menggabungkan metronom presisi tinggi, pemutar audio sinkron dari Supabase, dan penampil chord otomatis. Proyek ini dibangun menggunakan **Next.js 15**, **Tailwind CSS**, dan **Supabase**.
+**Chord Tempo** adalah aplikasi web untuk musisi yang menggabungkan metronom presisi tinggi, pemutar audio, dan penampil chord otomatis. Proyek ini dibangun menggunakan **Next.js 15**, **Tailwind CSS**, dan **Supabase**.
 
 ---
 
-## 🚀 Langkah-langkah Setup (Untuk Developer Baru)
+## 🚀 Langkah-langkah Setup
 
-Jika kamu baru saja melakukan `git clone`, ikuti panduan di bawah ini agar aplikasi berjalan sempurna di komputer lokalmu.
+Panduan ini dibuat untuk teman yang baru saja men-clone repo dan ingin menjalankan aplikasi secara lokal.
 
-### 1. Instalasi Dependensi
-Pastikan kamu sudah menginstal Node.js (v18+). Buka terminal di root folder proyek dan jalankan:
+### 1. Clone Repository
+
+Jalankan perintah berikut di terminal:
+
+```bash
+git clone https://github.com/<username>/chordtempo-next.git
+cd chordtempo-next
+```
+
+### 2. Install Dependensi
+
+Pastikan Node.js sudah terpasang (disarankan v18 atau lebih baru), lalu jalankan:
+
 ```bash
 npm install
-2. Konfigurasi Database (Supabase)
-Proyek ini menggunakan Supabase untuk menyimpan data lagu dan file audio.
+```
 
-Buat proyek baru di Supabase Dashboard.
+### 3. Siapkan Supabase
 
-Jalankan Query SQL berikut di SQL Editor untuk membuat tabel:
+Aplikasi menggunakan Supabase untuk penyimpanan dan autentikasi.
 
-SQL
--- Tabel Utama Lagu
-CREATE TABLE songs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  title TEXT NOT NULL,
-  artist TEXT,
-  slug TEXT UNIQUE,
-  bpm INTEGER DEFAULT 120,
-  time_signature TEXT DEFAULT '4/4',
-  audio_url TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+1. Buka https://app.supabase.com dan buat proyek baru.
+2. Salin `Project URL` dan `anon public key` dari halaman Settings -> API.
+3. Buat tabel data jika diperlukan. Contoh struktur tabel sederhana:
+
+```sql
+create table songs (
+  id uuid primary key default uuid_generate_v4(),
+  title text not null,
+  artist text,x
+  slug text unique,
+  bpm integer default 120,
+  time_signature text default '4/4',
+  audio_url text,
+  created_at timestamp with time zone default now()
 );
 
--- Tabel Artikel Chord (Lirik)
-CREATE TABLE chord_articles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  song_id UUID REFERENCES songs(id) ON DELETE CASCADE,
-  content TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+create table chord_articles (
+  id uuid primary key default uuid_generate_v4(),
+  song_id uuid references songs(id) on delete cascade,
+  content text,
+  created_at timestamp with time zone default now()
 );
-3. Setup Storage (Untuk Audio MP3)
-Agar musik bisa diputar:
+```
 
-Masuk ke menu Storage di Supabase.
+4. Jika ingin menggunakan audio MP3 di Supabase Storage:
+   - Buat bucket baru (misalnya `song-tracks`).
+   - Atur bucket menjadi publik jika ingin mengakses file dari aplikasi.
+   - Upload file `.mp3` dan gunakan URL publiknya pada kolom `audio_url` di tabel `songs`.
 
-Buat Bucket baru bernama song-tracks.
+### 4. Buat `.env.local`
 
-PENTING: Klik kanan pada bucket tersebut -> Make Public.
+Di root folder proyek, buat file baru bernama `.env.local` dan isi nilai Supabase:
 
-Upload file .mp3 lagu kamu ke sana.
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project-id>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+```
 
-Salin Public URL file tersebut dan masukkan ke kolom audio_url di tabel songs pada baris lagu yang bersangkutan.
+> Jika menggunakan Supabase Auth atau fitur tambahan lain, periksa file `src/lib/pocketbaseClient.js` atau `src/utils/supabase/` untuk variabel environment tambahan.
 
-4. Konfigurasi Environment Variables
-Buat file baru bernama .env.local di root folder proyek (sejajar dengan package.json) dan masukkan API Key Supabase kamu:
+### 5. Jalankan Aplikasi
 
-Cuplikan kode
-NEXT_PUBLIC_SUPABASE_URL=[https://your-project-id.supabase.co](https://your-project-id.supabase.co)
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-5. Menjalankan Aplikasi
-Setelah semua siap, jalankan server development:
+Setelah semua selesai, jalankan server development:
 
-Bash
+```bash
 npm run dev
-Buka http://localhost:3000 di browsermu.
+```
 
-✨ Fitur Utama
-Precision Metronome Engine: Menggunakan Web Audio API untuk ketukan yang sangat akurat tanpa lagging.
+Buka `http://localhost:3000` di browser.
 
-Audio Mixer: Kontrol volume metronom dan volume lagu MP3 secara terpisah.
+### 6. Hal yang Perlu Dicek jika Gagal
 
-Sync Offset: Fitur untuk menyesuaikan delay (ms) jika ketukan lagu dan metronom belum pas.
+- Pastikan `.env.local` ada di root proyek.
+- Pastikan `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` sesuai dengan proyek Supabase.
+- Jika ada masalah CORS, tambahkan `http://localhost:3000` ke daftar `Allowed Origins` di Supabase Settings -> API.
+- Jika audio tidak muncul, pastikan URL file `.mp3` sudah benar dan bucket Storage bersifat publik.
 
-Interactive Chord Display:
+---
 
-Transpose: Ubah nada dasar (Key) seluruh chord secara instan.
+## 📌 Catatan Tambahan
 
-Auto Scroll: Layar chord bergeser otomatis mengikuti BPM lagu saat tombol Play ditekan.
+- Aplikasi menggunakan **Next.js App Router** dan file konfigurasi berada di `src/app/`.
+- Halaman utama berada di `src/app/page.js`.
+- Komponen UI utama berada di `src/components/`.
+- Jika kamu ingin menambahkan lagu baru, isi data di tabel `songs` dan `chord_articles`.
 
-Font Scaling: Atur ukuran teks chord untuk visibilitas saat latihan.
+---
 
-📝 Panduan Penulisan Chord
-Agar fitur Transpose dan pewarnaan chord berfungsi, tuliskan chord di dalam kurung siku [] pada kolom content di tabel chord_articles.
+## 💡 Cara Menjalankan di Production
 
-Contoh Format:
+Untuk build production:
 
-Plaintext
-[Intro]
-[A]  [D]  [A]  [D]
+```bash
+npm run build
+npm run start
+```
 
-[Verse]
-[A]Mimpi adalah [D]kunci
-[Bm]Untuk kita [E]menaklukkan dunia
-⚠️ Troubleshooting
-Suara Tidak Keluar? Browser memblokir suara otomatis. Klik area mana saja di halaman web terlebih dahulu sebelum menekan tombol Play.
-
-Error CORS? Di Supabase Dashboard, masuk ke Settings -> API, lalu tambahkan http://localhost:3000 ke bagian Allowed Origins.
-
-Metronom & Lagu Tidak Pas? Gunakan slider Sync Offset di bagian Mixer Audio untuk menyelaraskannya.
+Selamat mencoba! Jika butuh bantuan, tinggal tanya lagi. 😊
