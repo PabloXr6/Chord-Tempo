@@ -30,7 +30,7 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Logika Auto-Search ke Supabase
+  // Logika Auto-Search ke Supabasee
   useEffect(() => {
     const searchSongs = async () => {
       if (searchQuery.trim().length < 2) {
