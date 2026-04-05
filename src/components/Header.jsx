@@ -30,7 +30,7 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Logika Auto-Search (Debounced) ke Supabase
+  // Logika Auto-Search ke Supabase
   useEffect(() => {
     const searchSongs = async () => {
       if (searchQuery.trim().length < 2) {
