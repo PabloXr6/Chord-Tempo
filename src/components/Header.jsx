@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Music, Search, Menu, ShieldCheck, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/utils/supabase/client';
+import { LogOut, Menu, Music, Plus, Search, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 const Header = () => {
   const router = useRouter();
@@ -129,8 +129,8 @@ const Header = () => {
             ) : (
               <>
                 <Button variant="ghost" asChild className="text-muted-foreground hover:text-primary">
-                  <Link href="/admin/dashboard">
-                    <ShieldCheck className="w-4 h-4 mr-2" /> Dashboard
+                  <Link href="/admin/songs/new">
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Lagu
                   </Link>
                 </Button>
                 <Button variant="outline" onClick={handleLogout} className="rounded-full border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground">
@@ -186,6 +186,9 @@ const Header = () => {
                       <>
                         <Link href="/admin/dashboard" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
                           <ShieldCheck className="w-5 h-5 mr-3" /> Dashboard
+                        </Link>
+                        <Link href="/admin/songs/new" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                          <Plus className="w-5 h-5 mr-3" /> Tambah Lagu
                         </Link>
                         <button onClick={handleLogout} className="px-3 py-2 rounded-md text-base font-medium text-destructive hover:bg-destructive/10 text-left flex items-center">
                           <LogOut className="w-5 h-5 mr-3" /> Logout
