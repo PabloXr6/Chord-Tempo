@@ -74,7 +74,7 @@ export default function HomePage() {
               Master Your <span className="text-accent-foreground">Rhythm</span>.
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 font-medium">
-              Aplikasi metronom web tingkat lanjut dengan dukungan lirik & chord interaktif. Sempurna untuk latihan, rekaman, dan live performance.
+              Aplikasi metronom dengan dukungan lirik & chord interaktif. Sempurna untuk latihan, rekaman, dan live performance.
             </p>
             <div className="flex items-center justify-center lg:justify-start gap-4 pt-4">
               <Button size="lg" className="rounded-full px-10 h-14 text-lg font-bold group" asChild>

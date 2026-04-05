@@ -37,7 +37,7 @@ Aplikasi menggunakan Supabase untuk penyimpanan dan autentikasi.
 create table songs (
   id uuid primary key default uuid_generate_v4(),
   title text not null,
-  artist text,
+  artist text,x
   slug text unique,
   bpm integer default 120,
   time_signature text default '4/4',

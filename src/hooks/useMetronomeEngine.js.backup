@@ -1,183 +1,166 @@
 "use client";
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export const useMetronomeEngine = () => {
+export const useMetronomeEngine = (audioUrl = null, initialOffset = 0) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [bpm, setBpmState] = useState(120);
-  const [timeSignature, setTimeSignatureState] = useState('4/4');
-  const [volume, setVolumeState] = useState(80);
-  const [subdivisions, setSubdivisionsState] = useState('off');
-  const [accentPattern, setAccentPatternState] = useState('1,0,0,0');
+  const [bpm, setBPM] = useState(120);
+  const [timeSignature, setTimeSignature] = useState('4/4');
+  const [volume, setVolume] = useState(70);
+  const [musicVolume, setMusicVolume] = useState(100);
   const [currentBeat, setCurrentBeat] = useState(0);
-
-  const audioCtxRef = useRef(null);
+  const [offset, setOffset] = useState(initialOffset);
+  
+  const audioContextRef = useRef(null);
+  const audioTrackRef = useRef(null);
   const nextNoteTimeRef = useRef(0);
-  const currentNoteRef = useRef(0);
-  const timerIdRef = useRef(null);
   const tapTimesRef = useRef([]);
+  const beatRef = useRef(0);
 
+  // 1. Inisialisasi Audio Context
   const initAudio = useCallback(() => {
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
     }
-    if (audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume();
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
     }
   }, []);
 
-  const setBPM = useCallback((newBpm) => setBpmState(Math.max(30, Math.min(300, newBpm))), []);
-  const setTimeSignature = useCallback((ts) => setTimeSignatureState(ts), []);
-  const setVolume = useCallback((v) => setVolumeState(Math.max(0, Math.min(100, v))), []);
-  const setSubdivisions = useCallback((s) => setSubdivisionsState(s), []);
-  const setAccentPattern = useCallback((p) => setAccentPatternState(p), []);
-
+  // 2. Watcher: Pantau perubahan audioUrl dari Supabase
   useEffect(() => {
-    return () => {
-      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
-        audioCtxRef.current.close();
+    if (audioUrl) {
+      console.log("Hook mendeteksi Audio URL baru:", audioUrl);
+      
+      // Bersihkan track lama jika ada
+      if (audioTrackRef.current) {
+        audioTrackRef.current.pause();
+        audioTrackRef.current = null;
       }
-      if (timerIdRef.current) clearTimeout(timerIdRef.current);
-    };
-  }, []);
 
-  const playClick = useCallback((time, type) => {
-    if (!audioCtxRef.current) return;
-    const ctx = audioCtxRef.current;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    const vol = volume / 100;
+      const audio = new Audio(audioUrl);
+      audio.volume = musicVolume / 100;
+      audio.preload = "auto";
+      
+      audio.onerror = (e) => console.error("Gagal memuat MP3 dari Supabase. Cek Public Access di Storage:", e);
+      audio.oncanplaythrough = () => console.log("MP3 Siap diputar!");
 
-    if (type === 'downbeat') {
-      osc.frequency.value = 1000;
-      gain.gain.setValueAtTime(vol, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
-      osc.start(time);
-      osc.stop(time + 0.1);
-    } else if (type === 'regular') {
-      osc.frequency.value = 800;
-      gain.gain.setValueAtTime(vol, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
-      osc.start(time);
-      osc.stop(time + 0.08);
-    } else {
-      osc.frequency.value = 600;
-      gain.gain.setValueAtTime(vol * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
-      osc.start(time);
-      osc.stop(time + 0.06);
+      audioTrackRef.current = audio;
     }
+  }, [audioUrl]); 
+
+  // 3. Click Sound Logic
+  const playClick = useCallback((time, beat) => {
+    if (!audioContextRef.current) return;
+    const osc = audioContextRef.current.createOscillator();
+    const envelope = audioContextRef.current.createGain();
+    osc.frequency.value = beat === 0 ? 1000 : 800;
+    envelope.gain.value = volume / 100;
+    envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+    osc.connect(envelope);
+    envelope.connect(audioContextRef.current.destination);
+    osc.start(time);
+    osc.stop(time + 0.1);
   }, [volume]);
 
-  const play = useCallback(() => {
-    if (isPlaying) return;
-    initAudio();
-    currentNoteRef.current = 0;
-    nextNoteTimeRef.current = audioCtxRef.current.currentTime + 0.05;
-    scheduler();
-    setIsPlaying(true);
-  }, [isPlaying, scheduler, initAudio]);
-
+  // 4. Scheduler Metronome
+  // 4. Scheduler Metronome
+  // Kita hapus pemanggilan requestAnimationFrame dari dalam sini
   const scheduler = useCallback(() => {
-    if (!audioCtxRef.current) return;
-    const ctx = audioCtxRef.current;
-    const beatsPerMeasure = parseInt(timeSignature.split('/')[0]) || 4;
-    
-    let subDivCount = 1;
-    if (subdivisions === '8th') subDivCount = 2;
-    if (subdivisions === 'triplet') subDivCount = 3;
-    if (subdivisions === '16th') subDivCount = 4;
-
-    const secondsPerBeat = 60.0 / bpm;
-    const secondsPerNote = secondsPerBeat / subDivCount;
-
-    while (nextNoteTimeRef.current < ctx.currentTime + 0.1) {
-      const beatInMeasure = Math.floor(currentNoteRef.current / subDivCount) % beatsPerMeasure;
-      const isSubdivision = currentNoteRef.current % subDivCount !== 0;
-      
-      let type = 'regular';
-      if (isSubdivision) {
-        type = 'subdivision';
-      } else {
-        const pattern = accentPattern.split(',').map(Number);
-        const isAccent = pattern[beatInMeasure] === 1;
-        if (isAccent || (beatInMeasure === 0 && accentPattern === '')) {
-          type = 'downbeat';
-        }
-      }
-
-      playClick(nextNoteTimeRef.current, type);
-
-      if (!isSubdivision) {
-        const timeToNote = (nextNoteTimeRef.current - ctx.currentTime) * 1000;
-        setTimeout(() => setCurrentBeat(beatInMeasure), Math.max(0, timeToNote));
-      }
-
-      nextNoteTimeRef.current += secondsPerNote;
-      currentNoteRef.current++;
+    while (nextNoteTimeRef.current < audioContextRef.current.currentTime + 0.1) {
+      const beatsPerMeasure = parseInt(timeSignature.split('/')[0]);
+      playClick(nextNoteTimeRef.current, beatRef.current);
+      const secondsPerBeat = 60.0 / bpm;
+      nextNoteTimeRef.current += secondsPerBeat;
+      beatRef.current = (beatRef.current + 1) % beatsPerMeasure;
+      setCurrentBeat(beatRef.current);
     }
-    timerIdRef.current = setTimeout(scheduler, 25);
-  }, [bpm, timeSignature, subdivisions, accentPattern, playClick]);
+  }, [bpm, timeSignature, playClick]);
 
-  const stop = useCallback(() => {
+  // 5. Motor Loop (Ini yang menjalankan scheduler secara berulang)
+  useEffect(() => {
+    let timerID;
 
-  const stop = useCallback(() => {
-    if (timerIdRef.current) clearTimeout(timerIdRef.current);
-    setIsPlaying(false);
+    const tick = () => {
+      if (isPlaying) {
+        scheduler();
+        timerID = requestAnimationFrame(tick); // Memanggil tick, bukan scheduler langsung
+      }
+    };
+
+    if (isPlaying) {
+      timerID = requestAnimationFrame(tick);
+    } else {
+      cancelAnimationFrame(timerID);
+    }
+
+    return () => cancelAnimationFrame(timerID);
+  }, [isPlaying, scheduler]);
+
+  // 5. Playback Controls
+  const play = useCallback(() => {
+    initAudio();
+    
+    if (isPlaying) return;
+
+    if (audioTrackRef.current) {
+      audioTrackRef.current.play().catch(e => console.error("Playback error:", e));
+    } else {
+      console.warn("Play ditekan tapi audioTrack belum siap (URL null).");
+    }
+
+    const offsetInSeconds = offset / 1000;
+    nextNoteTimeRef.current = audioContextRef.current.currentTime + 0.05 + offsetInSeconds;
+    
+    beatRef.current = 0;
     setCurrentBeat(0);
-    currentNoteRef.current = 0;
-  }, []);
+    setIsPlaying(true);
+  }, [initAudio, isPlaying, offset]);
 
   const pause = useCallback(() => {
-    if (timerIdRef.current) clearTimeout(timerIdRef.current);
     setIsPlaying(false);
+    if (audioTrackRef.current) audioTrackRef.current.pause();
   }, []);
 
+  const stop = useCallback(() => {
+    setIsPlaying(false);
+    if (audioTrackRef.current) {
+      audioTrackRef.current.pause();
+      audioTrackRef.current.currentTime = 0;
+    }
+    beatRef.current = 0;
+    setCurrentBeat(0);
+  }, []);
+
+  // 6. Sync Music Volume
+  useEffect(() => {
+    if (audioTrackRef.current) {
+      audioTrackRef.current.volume = musicVolume / 100;
+    }
+  }, [musicVolume]);
+
   const tapTempo = useCallback(() => {
-    const now = Date.now();
+    const now = performance.now();
     tapTimesRef.current.push(now);
     if (tapTimesRef.current.length > 4) tapTimesRef.current.shift();
-    
     if (tapTimesRef.current.length >= 2) {
       const intervals = [];
       for (let i = 1; i < tapTimesRef.current.length; i++) {
-        intervals.push(tapTimesRef.current[i] - tapTimesRef.current[i - 1]);
+        intervals.push(tapTimesRef.current[i] - tapTimesRef.current[i-1]);
       }
-      const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-      const newBpm = Math.round(60000 / avg);
-      if (newBpm >= 30 && newBpm <= 300) setBpmState(newBpm);
+      const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
+      const newBPM = Math.round(60000 / avgInterval);
+      if (newBPM >= 30 && newBPM <= 300) setBPM(newBPM);
     }
-    
-    setTimeout(() => {
-      if (tapTimesRef.current.length > 0 && Date.now() - tapTimesRef.current[tapTimesRef.current.length - 1] > 2000) {
-        tapTimesRef.current = [];
-      }
-    }, 2000);
   }, []);
 
   return {
-    isPlaying: () => isPlaying,
-    play, 
-    stop, 
-    pause,
-    bpm, 
-    setBPM,
-    timeSignature, 
-    setTimeSignature,
-    volume, 
-    setVolume,
-    subdivisions, 
-    setSubdivisions,
-    accentPattern, 
-    setAccentPattern,
-    tapTempo, 
-    currentBeat,
-    getCurrentBPM: () => bpm,
-    getCurrentVolume: () => volume
+    isPlaying, play, pause, stop,
+    bpm, setBPM,
+    timeSignature, setTimeSignature,
+    volume, setVolume,
+    musicVolume, setMusicVolume,
+    offset, setOffset,
+    currentBeat, tapTempo
   };
 };
-
-export default useMetronomeEngine;
