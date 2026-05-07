@@ -1,6 +1,5 @@
 "use client";
 
-import Header from '@/components/Header.jsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,10 +10,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export const metadata = {
-  title: 'Login - Chord Tempo',
-  description: 'Login to your Chord Tempo account to access your playlists and practice sessions'
-};
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -31,7 +26,7 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
-      router.push('/dashboard');
+      router.push('/playlists');
     } catch (err) {
       setError(err.message || 'Invalid email or password');
     } finally {
@@ -41,7 +36,6 @@ const LoginPage = () => {
 
   return (
     <>
-      <Header />
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-muted/30 px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">

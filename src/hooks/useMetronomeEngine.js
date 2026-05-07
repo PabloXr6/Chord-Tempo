@@ -27,6 +27,15 @@ export const useMetronomeEngine = (audioUrl = null, initialOffset = 0) => {
     }
   }, []);
 
+  // Cleanup Audio Context saat unmount
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
   // 2. Watcher: Pantau perubahan audioUrl dari Supabase
   useEffect(() => {
     if (audioUrl) {
@@ -47,6 +56,13 @@ export const useMetronomeEngine = (audioUrl = null, initialOffset = 0) => {
 
       audioTrackRef.current = audio;
     }
+
+    return () => {
+      if (audioTrackRef.current) {
+        audioTrackRef.current.pause();
+        audioTrackRef.current = null;
+      }
+    };
   }, [audioUrl]); 
 
   // 3. Click Sound Logic

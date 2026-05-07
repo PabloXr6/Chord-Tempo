@@ -13,8 +13,10 @@ import {
   Zap, 
   Music, 
   Volume2, 
+  VolumeX,
   Settings2,
-  Clock
+  Clock,
+  ListMusic
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -32,6 +34,7 @@ import {
 
 import { useMetronomeEngine } from '@/hooks/useMetronomeEngine';
 import ChordDisplay from '@/components/ChordDisplay';
+import AddToPlaylistModal from '@/components/AddToPlaylistModal';
 import { toast } from 'sonner';
 
 export default function SongPage({ params }) {
@@ -43,6 +46,7 @@ export default function SongPage({ params }) {
   const [chordArticle, setChordArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [visualEffects, setVisualEffects] = useState(true);
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
 
   // Inisialisasi Metronome Engine dengan URL Audio dari database
   const {
@@ -103,6 +107,15 @@ export default function SongPage({ params }) {
   const beatsPerMeasure = parseInt(timeSignature.split('/')[0]) || 4;
   const isFlashing = visualEffects && isPlaying && currentBeat === 0;
 
+  if (loading || !song) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground animate-pulse">Memuat lagu...</p>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen transition-colors duration-150 ${isFlashing ? 'bg-primary/5' : 'bg-background'}`}>
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -115,9 +128,14 @@ export default function SongPage({ params }) {
           
           {/* SISI KIRI: METRONOME CONSOLE */}
           <div className="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-24">
-            <div className="space-y-1">
-              <h1 className="text-4xl font-black tracking-tighter leading-tight">{song.title}</h1>
-              <p className="text-xl text-muted-foreground font-medium">{song.artist}</p>
+            <div className="flex justify-between items-start gap-4">
+              <div className="space-y-1">
+                <h1 className="text-4xl font-black tracking-tighter leading-tight">{song.title}</h1>
+                <p className="text-xl text-muted-foreground font-medium">{song.artist}</p>
+              </div>
+              <Button onClick={() => setIsPlaylistModalOpen(true)} variant="outline" className="shrink-0 bg-card">
+                <ListMusic className="w-4 h-4 mr-2" /> Add to Playlist
+              </Button>
             </div>
 
             <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
@@ -199,7 +217,18 @@ export default function SongPage({ params }) {
                   {/* Metronome Volume */}
                   <div className="space-y-3">
                     <div className="flex justify-between text-[10px] font-bold uppercase text-muted-foreground">
-                      <div className="flex items-center gap-2"><Volume2 className="w-3 h-3" /> Metronome</div>
+                      <div className="flex items-center gap-2">
+                        <Volume2 className="w-3 h-3" /> 
+                        <span>Metronome</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-4 w-4 p-0 hover:text-primary"
+                          onClick={() => setVolume(volume === 0 ? 70 : 0)}
+                        >
+                          {volume === 0 ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                        </Button>
+                      </div>
                       <span>{volume}%</span>
                     </div>
                     <Slider value={[volume]} onValueChange={(v) => setVolume(v[0])} max={100} />
@@ -252,6 +281,16 @@ export default function SongPage({ params }) {
 
         </div>
       </div>
+
+      {song && (
+        <AddToPlaylistModal 
+          open={isPlaylistModalOpen} 
+          onOpenChange={setIsPlaylistModalOpen} 
+          songData={song}
+          currentBPM={bpm}
+          currentTimeSignature={timeSignature}
+        />
+      )}
     </div>
   );
 }

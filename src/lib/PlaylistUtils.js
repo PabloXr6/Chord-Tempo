@@ -70,7 +70,11 @@ export const getPlaylistById = async (id) => {
             id,
             title,
             artist,
-            slug
+            slug,
+            bpm,
+            time_signature,
+            audio_url,
+            chord_articles(content)
           )
         )
       `)

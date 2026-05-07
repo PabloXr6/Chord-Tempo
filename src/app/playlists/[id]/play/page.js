@@ -11,7 +11,9 @@ import {
   Pause, 
   Square, 
   ListMusic,
-  Settings2
+  Settings2,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -43,14 +45,15 @@ export default function PlaylistPlaybackPage({ params }) {
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [loading, setLoading] = useState(true);
 
-  // Inisialisasi Metronome Engine
+  // Inisialisasi Metronome Engine dengan URL Audio dari lagu saat ini
   const {
     isPlaying, play, pause, stop,
     bpm, setBPM,
     timeSignature, setTimeSignature,
     volume, setVolume,
+    musicVolume, setMusicVolume,
     currentBeat
-  } = useMetronomeEngine();
+  } = useMetronomeEngine(playlist?.playlist_items[currentIndex]?.songs?.audio_url);
 
   // 1. Fetch Data Playlist & Songs
   useEffect(() => {
@@ -237,12 +240,34 @@ export default function PlaylistPlaybackPage({ params }) {
                 </div>
 
                 {/* Quick Volume Slider */}
-                <div className="space-y-3 pt-4 border-t border-border/50">
-                   <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      <span>Volume</span>
-                      <span>{volume}%</span>
+                <div className="space-y-4 pt-4 border-t border-border/50">
+                   {/* Metronome Volume */}
+                   <div className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                         <div className="flex items-center gap-2">
+                           <span>Metronome Volume</span>
+                           <Button 
+                             variant="ghost" 
+                             size="icon" 
+                             className="h-5 w-5 p-0 hover:text-primary"
+                             onClick={() => setVolume(volume === 0 ? 70 : 0)}
+                           >
+                             {volume === 0 ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                           </Button>
+                         </div>
+                         <span>{volume}%</span>
+                      </div>
+                      <Slider value={[volume]} onValueChange={(v) => setVolume(v[0])} max={100} step={1} />
                    </div>
-                   <Slider value={[volume]} onValueChange={(v) => setVolume(v[0])} max={100} step={1} />
+
+                   {/* Music Volume */}
+                   <div className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-primary">
+                         <span>Music Volume</span>
+                         <span>{musicVolume}%</span>
+                      </div>
+                      <Slider value={[musicVolume]} onValueChange={(v) => setMusicVolume(v[0])} max={100} step={1} />
+                   </div>
                 </div>
               </CardContent>
             </Card>
@@ -268,7 +293,11 @@ export default function PlaylistPlaybackPage({ params }) {
           {/* Sisi Kanan: Chord Display */}
           <div className="lg:col-span-8">
              {/* Fetch chord content dari Supabase (asumsi chord ada di kolom chord_content tabel songs atau via join) */}
-             <ChordDisplay chordContent={currentSong.chord_content || ""} />
+             <ChordDisplay 
+               chordContent={currentSong.chord_articles?.[0]?.content || ""} 
+               isPlaying={isPlaying} 
+               bpm={bpm} 
+             />
           </div>
 
         </div>

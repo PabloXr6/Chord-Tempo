@@ -5,14 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/utils/supabase/client';
-import { LogOut, Menu, Music, Plus, Search, ShieldCheck } from 'lucide-react';
+import { LogOut, Menu, Music, Plus, Search, ShieldCheck, ListMusic } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 const Header = () => {
   const router = useRouter();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const supabase = createClient();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,7 +70,7 @@ const Header = () => {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/admin/login');
+    router.push('/login');
   };
 
   return (
@@ -121,17 +122,29 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-4 shrink-0">
+            <Link href="/playlists" className="text-sm font-medium text-muted-foreground hover:text-foreground flex items-center transition-colors">
+              <ListMusic className="w-4 h-4 mr-2" /> Playlists
+            </Link>
             {!isAuthenticated ? (
               <Button variant="outline" asChild className="rounded-full">
-                <Link href="/admin/login">Admin Login</Link>
+                <Link href="/login">Login</Link>
               </Button>
             ) : (
               <>
-                <Button variant="ghost" asChild className="text-muted-foreground hover:text-primary">
-                  <Link href="/admin/songs/new">
-                    <Plus className="w-4 h-4 mr-2" /> Tambah Lagu
-                  </Link>
-                </Button>
+                {isAdmin && (
+                  <>
+                    <Button variant="ghost" asChild className="text-muted-foreground hover:text-primary">
+                      <Link href="/admin/songs">
+                        <ListMusic className="w-4 h-4 mr-2" /> List Lagu
+                      </Link>
+                    </Button>
+                    <Button variant="ghost" asChild className="text-muted-foreground hover:text-primary">
+                      <Link href="/admin/songs/new">
+                        <Plus className="w-4 h-4 mr-2" /> Tambah Lagu
+                      </Link>
+                    </Button>
+                  </>
+                )}
                 <Button variant="outline" onClick={handleLogout} className="rounded-full border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground">
                   <LogOut className="w-4 h-4 mr-2" /> Logout
                 </Button>
@@ -177,18 +190,28 @@ const Header = () => {
                   )}
 
                   <nav className="flex flex-col space-y-2">
+                    <Link href="/playlists" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                      <ListMusic className="w-5 h-5 mr-3" /> Playlists
+                    </Link>
                     {!isAuthenticated ? (
-                      <Link href="/admin/login" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
-                        Admin Login
+                      <Link href="/login" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                        Login
                       </Link>
                     ) : (
                       <>
-                        <Link href="/admin/dashboard" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
-                          <ShieldCheck className="w-5 h-5 mr-3" /> Dashboard
+                        <Link href="/playlists" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                          <ListMusic className="w-5 h-5 mr-3" /> Dashboard
                         </Link>
-                        <Link href="/admin/songs/new" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
-                          <Plus className="w-5 h-5 mr-3" /> Tambah Lagu
-                        </Link>
+                        {isAdmin && (
+                          <>
+                            <Link href="/admin/songs" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                              <ListMusic className="w-5 h-5 mr-3" /> List Lagu
+                            </Link>
+                            <Link href="/admin/songs/new" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                              <Plus className="w-5 h-5 mr-3" /> Tambah Lagu
+                            </Link>
+                          </>
+                        )}
                         <button onClick={handleLogout} className="px-3 py-2 rounded-md text-base font-medium text-destructive hover:bg-destructive/10 text-left flex items-center">
                           <LogOut className="w-5 h-5 mr-3" /> Logout
                         </button>

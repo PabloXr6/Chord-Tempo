@@ -26,7 +26,8 @@ export default function EditSongPage({ params }) {
     artist: '',
     slug: '',
     bpm: 120,
-    timeSignature: '4/4'
+    timeSignature: '4/4',
+    audio_url: ''
   });
   const [chordContent, setChordContent] = useState('');
 
@@ -49,7 +50,8 @@ export default function EditSongPage({ params }) {
           artist: data.artist,
           slug: data.slug,
           bpm: data.bpm,
-          timeSignature: data.time_signature
+          timeSignature: data.time_signature,
+          audio_url: data.audio_url || ''
         });
         setChordContent(data.chord_articles?.[0]?.content || '');
       } catch (error) {
@@ -114,6 +116,15 @@ export default function EditSongPage({ params }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2"><Label>BPM</Label><Input type="number" value={formData.bpm} onChange={(e) => setFormData({...formData, bpm: e.target.value})} /></div>
                   <div className="space-y-2"><Label>Birama</Label><Input value={formData.timeSignature} onChange={(e) => setFormData({...formData, timeSignature: e.target.value})} /></div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Audio URL (Instrumental MP3)</Label>
+                  <Input 
+                    placeholder="https://.../song.mp3" 
+                    value={formData.audio_url} 
+                    onChange={(e) => setFormData({...formData, audio_url: e.target.value})}
+                  />
+                  <p className="text-[10px] text-muted-foreground italic">Kosongkan jika hanya ingin metronom saja.</p>
                 </div>
               </CardContent>
             </Card>

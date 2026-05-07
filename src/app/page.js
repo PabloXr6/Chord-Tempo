@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { Search, Music2, Clock, Zap, Play, ArrowRight, Activity } from 'lucide-react';
+import { Search, Music2, Clock, Zap, Play, ArrowRight, Activity, ListMusic } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,9 +77,14 @@ export default function HomePage() {
               Aplikasi metronom dengan dukungan lirik & chord interaktif. Sempurna untuk latihan, rekaman, dan live performance.
             </p>
             <div className="flex items-center justify-center lg:justify-start gap-4 pt-4">
-              <Button size="lg" className="rounded-full px-10 h-14 text-lg font-bold group" asChild>
+              <Button size="lg" className="rounded-full px-8 h-14 text-lg font-bold group" asChild>
                 <Link href="/playlists">
                   <Activity className="w-5 h-5 mr-2" /> Start Metronome <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" className="rounded-full px-8 h-14 text-lg font-bold" asChild>
+                <Link href="/playlists">
+                  <ListMusic className="w-5 h-5 mr-2" /> My Playlists
                 </Link>
               </Button>
             </div>

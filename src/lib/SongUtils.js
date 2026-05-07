@@ -11,7 +11,8 @@ export const saveNewSong = async (songData, chordContent) => {
       artist: songData.artist,
       slug: songData.slug,
       bpm: parseInt(songData.bpm),
-      time_signature: songData.timeSignature
+      time_signature: songData.timeSignature,
+      audio_url: songData.audio_url
     }])
     .select()
     .single();
@@ -57,7 +58,8 @@ export const updateExistingSong = async (songId, songData, chordContent) => {
       artist: songData.artist,
       slug: songData.slug,
       bpm: parseInt(songData.bpm),
-      time_signature: songData.timeSignature
+      time_signature: songData.timeSignature,
+      audio_url: songData.audio_url
     })
     .eq('id', songId);
 

@@ -14,27 +14,62 @@ export const AuthProvider = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
-    // 1. Ambil sesi saat ini ketika aplikasi dimuat
-    const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+
+        setSession(session);
+        const currentUser = session?.user ?? null;
+        
+        if (currentUser) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', currentUser.id)
+            .single();
+          
+          if (mounted) setUser({ ...currentUser, role: profile?.role || 'user' });
+        } else {
+          if (mounted) setUser(null);
+        }
+      } catch (err) {
+        console.error("Auth initialization error:", err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     };
 
-    getInitialSession();
+    initializeAuth();
 
-    // 2. Dengarkan perubahan status auth (login/logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
       
-      // Refresh halaman jika token berubah untuk memastikan cookies sinkron
-      router.refresh();
+      setSession(session);
+      const currentUser = session?.user ?? null;
+      
+      if (currentUser) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', currentUser.id)
+          .single();
+        
+        if (mounted) setUser({ ...currentUser, role: profile?.role || 'user' });
+      } else {
+        if (mounted) setUser(null);
+      }
+      
+      if (mounted) setLoading(false);
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        router.refresh();
+      }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [supabase, router]);
@@ -78,7 +113,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

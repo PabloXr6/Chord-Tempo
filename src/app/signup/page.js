@@ -1,6 +1,5 @@
 "use client";
 
-import Header from '@/components/Header.jsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,10 +10,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export const metadata = {
-  title: 'Sign Up - Chord Tempo',
-  description: 'Create your Chord Tempo account to start building playlists and practicing with our metronome'
-};
 
 const SignupPage = () => {
   const [name, setName] = useState('');
@@ -43,8 +38,8 @@ const SignupPage = () => {
     setLoading(true);
 
     try {
-      await signup(email, password, passwordConfirm, name);
-      router.push('/dashboard');
+      await signup(email, password, { full_name: name });
+      router.push('/playlists');
     } catch (err) {
       setError(err.message || 'Failed to create account');
     } finally {
@@ -54,7 +49,6 @@ const SignupPage = () => {
 
   return (
     <>
-      <Header />
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-muted/30 px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
