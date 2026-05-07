@@ -16,15 +16,15 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = async () => {
+    const initAuth = async () => {
       try {
+        // Ambil sesi secara instan agar tidak logout saat refresh
         const { data: { session } } = await supabase.auth.getSession();
         if (!mounted) return;
 
-        setSession(session);
-        const currentUser = session?.user ?? null;
-        
-        if (currentUser) {
+        if (session) {
+          setSession(session);
+          const currentUser = session.user;
           const { data: profile } = await supabase
             .from('profiles')
             .select('role')
@@ -32,17 +32,15 @@ export const AuthProvider = ({ children }) => {
             .single();
           
           if (mounted) setUser({ ...currentUser, role: profile?.role || 'user' });
-        } else {
-          if (mounted) setUser(null);
         }
       } catch (err) {
-        console.error("Auth initialization error:", err);
+        console.error("Auth init error:", err);
       } finally {
         if (mounted) setLoading(false);
       }
     };
 
-    initializeAuth();
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
@@ -51,13 +49,17 @@ export const AuthProvider = ({ children }) => {
       const currentUser = session?.user ?? null;
       
       if (currentUser) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', currentUser.id)
-          .single();
-        
-        if (mounted) setUser({ ...currentUser, role: profile?.role || 'user' });
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', currentUser.id)
+            .single();
+          
+          if (mounted) setUser({ ...currentUser, role: profile?.role || 'user' });
+        } catch (err) {
+          if (mounted) setUser({ ...currentUser, role: 'user' });
+        }
       } else {
         if (mounted) setUser(null);
       }
