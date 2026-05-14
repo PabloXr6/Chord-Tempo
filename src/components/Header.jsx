@@ -5,7 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/utils/supabase/client';
-import { LogOut, Menu, Music, Plus, Search, ShieldCheck, ListMusic } from 'lucide-react';
+import { LogOut, Menu, Music, Plus, Search, ShieldCheck, ListMusic, User, ChevronDown, Activity, Settings } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -70,8 +79,10 @@ const Header = () => {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/login');
+    // router.push('/') already handled in AuthContext
   };
+
+  const userInitials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'U';
 
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -131,23 +142,64 @@ const Header = () => {
               </Button>
             ) : (
               <>
-                {isAdmin && (
-                  <>
-                    <Button variant="ghost" asChild className="text-muted-foreground hover:text-primary">
-                      <Link href="/admin/songs">
-                        <ListMusic className="w-4 h-4 mr-2" /> List Lagu
-                      </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="text-muted-foreground hover:text-primary gap-2">
+                        <ShieldCheck className="w-4 h-4" />
+                        Admin Panel
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuLabel>Admin Menu</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/dashboard" className="cursor-pointer">
+                          <Activity className="w-4 h-4 mr-2" /> Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/songs" className="cursor-pointer">
+                          <ListMusic className="w-4 h-4 mr-2" /> List Lagu
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/songs/new" className="cursor-pointer">
+                          <Plus className="w-4 h-4 mr-2" /> Tambah Lagu
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/logs" className="cursor-pointer">
+                          <Settings className="w-4 h-4 mr-2" /> System Logs
+                        </Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full border border-border">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-primary/10 text-primary font-medium text-xs">
+                          {userInitials}
+                        </AvatarFallback>
+                      </Avatar>
                     </Button>
-                    <Button variant="ghost" asChild className="text-muted-foreground hover:text-primary">
-                      <Link href="/admin/songs/new">
-                        <Plus className="w-4 h-4 mr-2" /> Tambah Lagu
-                      </Link>
-                    </Button>
-                  </>
-                )}
-                <Button variant="outline" onClick={handleLogout} className="rounded-full border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground">
-                  <LogOut className="w-4 h-4 mr-2" /> Logout
-                </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{user?.email}</p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {isAdmin ? 'Administrator' : 'User'}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
+                      <LogOut className="w-4 h-4 mr-2" /> Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
           </nav>
@@ -204,11 +256,20 @@ const Header = () => {
                         </Link>
                         {isAdmin && (
                           <>
+                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-4">
+                              Admin Panel
+                            </div>
+                            <Link href="/admin/dashboard" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                              <Activity className="w-5 h-5 mr-3" /> Dashboard
+                            </Link>
                             <Link href="/admin/songs" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
                               <ListMusic className="w-5 h-5 mr-3" /> List Lagu
                             </Link>
                             <Link href="/admin/songs/new" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
                               <Plus className="w-5 h-5 mr-3" /> Tambah Lagu
+                            </Link>
+                            <Link href="/admin/logs" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                              <Settings className="w-5 h-5 mr-3" /> System Logs
                             </Link>
                           </>
                         )}

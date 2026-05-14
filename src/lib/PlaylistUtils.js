@@ -73,7 +73,6 @@ export const getPlaylistById = async (id) => {
             slug,
             bpm,
             time_signature,
-            audio_url,
             chord_articles(content)
           )
         )

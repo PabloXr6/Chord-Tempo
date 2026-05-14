@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { 
   Select, 
@@ -149,10 +150,17 @@ export default function SongPage({ params }) {
                   )}
 
                   <div className="text-center z-10">
-                    <div className="text-6xl font-black text-primary tracking-tighter tabular-nums">
-                      {bpm}
-                    </div>
-                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em]">BPM</div>
+                    <Input 
+                      type="number" 
+                      value={bpm} 
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (!isNaN(val)) setBPM(Math.max(30, Math.min(300, val)));
+                      }}
+                      className="text-6xl font-bold text-primary tracking-tighter text-center bg-transparent border-none focus-visible:ring-0 h-auto p-0 w-32 mx-auto"
+                      style={{ fontVariantNumeric: 'tabular-nums' }}
+                    />
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] mt-1">BPM</div>
                   </div>
 
                   <div className="flex items-center gap-3 mt-4 z-10">

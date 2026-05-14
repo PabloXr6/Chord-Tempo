@@ -65,9 +65,6 @@ export const AuthProvider = ({ children }) => {
       }
       
       if (mounted) setLoading(false);
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        router.refresh();
-      }
     });
 
     return () => {
