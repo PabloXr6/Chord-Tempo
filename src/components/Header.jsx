@@ -2,9 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/utils/supabase/client';
 import { LogOut, Menu, Music, Plus, Search, ShieldCheck, ListMusic, User, ChevronDown, Activity, Settings } from 'lucide-react';
 import {
   DropdownMenu,
@@ -18,12 +17,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 const Header = () => {
   const router = useRouter();
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, logout, user, supabase } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const supabase = createClient();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -78,8 +77,13 @@ const Header = () => {
   };
 
   const handleLogout = async () => {
-    await logout();
-    // router.push('/') already handled in AuthContext
+    toast.loading('Sedang keluar...', { id: 'logout' });
+    try {
+      await logout();
+      toast.success('Berhasil logout!', { id: 'logout' });
+    } catch (error) {
+      toast.error('Gagal logout', { id: 'logout' });
+    }
   };
 
   const userInitials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'U';
@@ -142,6 +146,7 @@ const Header = () => {
               </Button>
             ) : (
               <>
+                {isAdmin && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="text-muted-foreground hover:text-primary gap-2">
@@ -175,6 +180,7 @@ const Header = () => {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full border border-border">
@@ -213,6 +219,8 @@ const Header = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="bg-card border-l border-border w-[300px] sm:w-[400px]">
+                <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
+                <SheetDescription className="sr-only">Mobile navigation menu</SheetDescription>
                 <div className="flex flex-col gap-6 mt-8">
                   <form onSubmit={handleSearchSubmit} className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

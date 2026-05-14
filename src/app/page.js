@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Search, Music2, Clock, Zap, Play, ArrowRight, Activity, ListMusic } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -16,12 +16,12 @@ export default function HomePage() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const { supabase } = useAuth();
 
   // 1. Ambil data lagu untuk koleksi bawah
   useEffect(() => {
     const fetchSongs = async () => {
       try {
-        const supabase = createClient();
         const { data, error } = await supabase
           .from('songs')
           .select('*')

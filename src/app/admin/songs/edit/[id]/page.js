@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { updateExistingSong } from '@/lib/SongUtils';
-import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export default function EditSongPage({ params }) {
@@ -20,6 +20,7 @@ export default function EditSongPage({ params }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const { supabase } = useAuth();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -34,7 +35,6 @@ export default function EditSongPage({ params }) {
   // Load data awal lagu
   useEffect(() => {
     const fetchSongData = async () => {
-      const supabase = createClient();
       try {
         // Ambil data lagu dan join dengan chord_articles
         const { data, error } = await supabase

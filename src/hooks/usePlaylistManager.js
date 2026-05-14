@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { createPlaylist as createDbPlaylist, deletePlaylist as deleteDbPlaylist } from '@/lib/PlaylistUtils';
 import { toast } from 'sonner';
 
 export const usePlaylistManager = () => {
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const { supabase } = useAuth();
 
   const fetchPlaylists = useCallback(async () => {
     setLoading(true);

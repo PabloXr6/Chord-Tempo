@@ -10,7 +10,7 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.push('/admin/login');
+      router.push('/login');
     }
   }, [isAuthenticated, loading, router]);
 

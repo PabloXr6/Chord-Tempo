@@ -16,31 +16,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    const initAuth = async () => {
-      try {
-        // Ambil sesi secara instan agar tidak logout saat refresh
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!mounted) return;
 
-        if (session) {
-          setSession(session);
-          const currentUser = session.user;
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', currentUser.id)
-            .single();
-          
-          if (mounted) setUser({ ...currentUser, role: profile?.role || 'user' });
-        }
-      } catch (err) {
-        console.error("Auth init error:", err);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
@@ -74,30 +50,43 @@ export const AuthProvider = ({ children }) => {
   }, [supabase, router]);
 
   const login = async (email, password) => {
+    setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) throw error;
+    if (error) {
+      setLoading(false);
+      throw error;
+    }
     return data;
   };
 
   const signup = async (email, password, metadata = {}) => {
+    setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: metadata, // Menyimpan nama atau role tambahan
+        data: metadata,
       },
     });
-    if (error) throw error;
+    if (error) {
+      setLoading(false);
+      throw error;
+    }
     return data;
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    router.push('/');
+    try {
+      await supabase.auth.signOut();
+      // Gunakan window.location agar seluruh state memory bersih total
+      window.location.href = '/';
+    } catch (error) {
+      console.error("Logout error:", error);
+      throw error;
+    }
   };
 
   const value = {
@@ -107,7 +96,8 @@ export const AuthProvider = ({ children }) => {
     login,
     signup,
     logout,
-    loading
+    loading,
+    supabase
   };
 
   return (

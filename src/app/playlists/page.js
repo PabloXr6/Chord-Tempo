@@ -6,7 +6,7 @@ import { ListMusic, Plus, Trash2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePlaylistManager } from '@/hooks/usePlaylistManager';
 
@@ -49,6 +49,7 @@ export default function PlaylistsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Buat Playlist Baru</DialogTitle>
+              <DialogDescription className="sr-only">Masukkan nama playlist baru yang ingin dibuat.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4 pt-4">
               <Input

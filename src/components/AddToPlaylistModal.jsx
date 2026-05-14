@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 // Pastikan menghapus ekstensi .js
@@ -21,11 +23,18 @@ const AddToPlaylistModal = ({ open, onOpenChange, songData, currentBPM, currentT
   
   // State baru untuk menahan klik dobel saat proses ke database
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
 
   // Memuat data secara asynchronous (karena akan memanggil Supabase)
   useEffect(() => {
     if (open) {
       const loadPlaylists = async () => {
+        if (!isAuthenticated) {
+          router.push('/login');
+          onOpenChange(false);
+          return;
+        }
         try {
           const loaded = await getPlaylists();
           setPlaylists(loaded || []);
@@ -36,7 +45,10 @@ const AddToPlaylistModal = ({ open, onOpenChange, songData, currentBPM, currentT
           }
         } catch (error) {
           console.error("Error loading playlists:", error);
-          toast.error("Gagal memuat daftar playlist");
+          // Only show error if authenticated, otherwise they are being redirected
+          if (isAuthenticated) {
+            toast.error("Gagal memuat daftar playlist");
+          }
         }
       };
       
@@ -92,6 +104,9 @@ const AddToPlaylistModal = ({ open, onOpenChange, songData, currentBPM, currentT
       <DialogContent className="bg-card border-border sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add to Playlist</DialogTitle>
+          <DialogDescription className="sr-only">
+            Select a playlist to add this song to, or create a new one.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6 py-4">

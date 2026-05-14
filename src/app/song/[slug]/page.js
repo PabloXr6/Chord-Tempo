@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   ArrowLeft, 
   RotateCcw, 
@@ -42,8 +42,8 @@ export default function SongPage({ params }) {
   const unwrappedParams = use(params);
   const slug = unwrappedParams.slug;
   const router = useRouter();
-  
   const [song, setSong] = useState(null);
+  const { supabase } = useAuth();
   const [chordArticle, setChordArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [visualEffects, setVisualEffects] = useState(true);
@@ -63,7 +63,6 @@ export default function SongPage({ params }) {
   useEffect(() => {
     const fetchSongData = async () => {
       try {
-        const supabase = createClient();
         const { data: songData, error: songError } = await supabase
           .from('songs')
           .select('*, chord_articles(content)')

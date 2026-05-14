@@ -19,13 +19,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   Sheet, 
   SheetContent, 
   SheetHeader, 
   SheetTitle, 
-  SheetTrigger 
+  SheetTrigger,
+  SheetDescription
 } from '@/components/ui/sheet';
 
 import { getPlaylistById } from '@/lib/PlaylistUtils';
@@ -154,6 +156,7 @@ export default function PlaylistPlaybackPage({ params }) {
               <SheetContent>
                 <SheetHeader>
                   <SheetTitle>Daftar Lagu</SheetTitle>
+                  <SheetDescription className="sr-only">Daftar lagu dalam playlist ini</SheetDescription>
                 </SheetHeader>
                 <div className="mt-6 space-y-2">
                   {playlist.playlist_items.map((item, idx) => (
@@ -189,12 +192,21 @@ export default function PlaylistPlaybackPage({ params }) {
                   <p className="text-muted-foreground font-medium">{currentSong.artist}</p>
                 </div>
 
-                {/* Visualizer & BPM */}
                 <div className="flex flex-col items-center justify-center py-4">
-                  <div className="text-7xl font-black text-primary mb-2 tracking-tighter">
-                    {bpm}
+                  <div className="relative group/bpm flex items-center justify-center">
+                    <Input
+                      type="number"
+                      value={bpm}
+                      onChange={(e) => setBPM(Math.min(300, Math.max(20, parseInt(e.target.value) || 0)))}
+                      className="w-48 h-24 text-center text-7xl font-black text-primary bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 tracking-tighter"
+                      min={20}
+                      max={300}
+                    />
+                    <div className="absolute -bottom-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-0 group-hover/bpm:opacity-100 transition-opacity">
+                      Click to edit BPM
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 mt-4">
                     {Array.from({ length: beatsPerMeasure }).map((_, i) => (
                       <div
                         key={i}

@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { deleteSong } from '@/lib/SongUtils';
 import { toast } from 'sonner';
 
@@ -31,7 +31,7 @@ export default function AdminSongsPage() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const supabase = createClient();
+  const { supabase } = useAuth();
 
   const fetchSongs = async () => {
     setLoading(true);
