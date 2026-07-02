@@ -127,8 +127,19 @@ export default function PlaylistPlaybackPage({ params }) {
     );
   }
 
+  if (!playlist || !Array.isArray(playlist.playlist_items) || playlist.playlist_items.length === 0) {
+    return (
+      <div className="min-h-screen bg-background pb-20 flex items-center justify-center">
+        <div className="text-center p-8 bg-card rounded-3xl border border-border shadow-xl">
+          <h2 className="text-2xl font-bold">Playlist tidak tersedia</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Silakan kembali ke halaman playlist atau coba lagi nanti.</p>
+        </div>
+      </div>
+    );
+  }
+
   const currentItem = playlist.playlist_items[currentIndex];
-  const currentSong = currentItem.songs;
+  const currentSong = currentItem?.songs || {};
   const beatsPerMeasure = parseInt(timeSignature.split('/')[0]) || 4;
 
   return (

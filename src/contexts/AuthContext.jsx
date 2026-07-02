@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation';
 
 const AuthContext = createContext({});
 
@@ -11,12 +10,9 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
-  const router = useRouter();
 
   useEffect(() => {
     let mounted = true;
-
-
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
@@ -47,46 +43,28 @@ export const AuthProvider = ({ children }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase, router]);
+  }, [supabase]);
 
+  // LOGIN YANG SUDAH DIOPTIMASI
   const login = async (email, password) => {
-    setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) {
-      setLoading(false);
-      throw error;
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    
+    // THE MAGIC FIX: Paksa browser memuat ulang dari server (bukan dari cache Next.js)
+    window.location.href = '/admin/dashboard'; 
     return data;
   };
 
-  const signup = async (email, password, metadata = {}) => {
-    setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: metadata,
-      },
-    });
-    if (error) {
-      setLoading(false);
-      throw error;
-    }
-    return data;
-  };
-
+  // LOGOUT YANG SUDAH DIOPTIMASI
   const logout = async () => {
-    try {
-      await supabase.auth.signOut();
-      // Gunakan window.location agar seluruh state memory bersih total
-      window.location.href = '/';
-    } catch (error) {
-      console.error("Logout error:", error);
-      throw error;
-    }
+    await supabase.auth.signOut();
+    
+    // Hapus state lokal
+    setUser(null);
+    setSession(null);
+    
+    // THE MAGIC FIX: Paksa kembali ke halaman login dan bersihkan cache memory
+    window.location.href = '/login';
   };
 
   const value = {
@@ -94,7 +72,6 @@ export const AuthProvider = ({ children }) => {
     session,
     isAuthenticated: !!user,
     login,
-    signup,
     logout,
     loading,
     supabase

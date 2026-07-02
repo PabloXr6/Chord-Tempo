@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/client';
 export const saveNewSong = async (songData, chordContent) => {
   const supabase = createClient();
 
-  // 1. Insert ke tabel songs
+  // 1. Simpan ke tabel songs
   const { data: song, error: songError } = await supabase
     .from('songs')
     .insert([{
@@ -11,15 +11,23 @@ export const saveNewSong = async (songData, chordContent) => {
       artist: songData.artist,
       slug: songData.slug,
       bpm: parseInt(songData.bpm),
-      time_signature: songData.timeSignature,
-      audio_url: songData.audio_url
+      time_signature: songData.timeSignature
     }])
-    .select()
+    .select() // Mengambil kembali data yang di-insert
     .single();
 
-  if (songError) throw songError;
+  // Ubah error Supabase menjadi Error bawaan Javascript agar mudah dibaca
+  if (songError) {
+    console.error("Error DB Lagu:", songError);
+    throw new Error(songError.message || "Gagal saat membaca/menyimpan lagu");
+  }
 
-  // 2. Insert ke tabel chord_articles menggunakan ID song yang baru saja dibuat
+  // Pastikan lagu mendapatkan ID sebelum lanjut ke chord
+  if (!song || !song.id) {
+    throw new Error("Lagu masuk, tapi ID tidak ditemukan untuk menyimpan chord.");
+  }
+
+  // 2. Simpan chord
   const { error: chordError } = await supabase
     .from('chord_articles')
     .insert([{
@@ -27,30 +35,17 @@ export const saveNewSong = async (songData, chordContent) => {
       content: chordContent
     }]);
 
-  if (chordError) throw chordError;
+  if (chordError) {
+    console.error("Error DB Chord:", chordError);
+    throw new Error(chordError.message || "Gagal saat menyimpan chord");
+  }
 
   return song;
-};
-
-// Tambahkan ini di file src/lib/SongUtils.js
-export const deleteSong = async (id) => {
-  const supabase = createClient();
-  
-  // Karena kita menggunakan ON DELETE CASCADE pada tabel chord_articles,
-  // menghapus baris di tabel 'songs' otomatis akan menghapus chord-nya juga.
-  const { error } = await supabase
-    .from('songs')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
-  return true;
 };
 
 export const updateExistingSong = async (songId, songData, chordContent) => {
   const supabase = createClient();
 
-  // 1. Update data di tabel songs
   const { error: songError } = await supabase
     .from('songs')
     .update({
@@ -58,14 +53,13 @@ export const updateExistingSong = async (songId, songData, chordContent) => {
       artist: songData.artist,
       slug: songData.slug,
       bpm: parseInt(songData.bpm),
-      time_signature: songData.timeSignature,
-      audio_url: songData.audio_url
+      time_signature: songData.timeSignature
+      // audio_url dihapus
     })
     .eq('id', songId);
 
   if (songError) throw songError;
 
-  // 2. Update data di tabel chord_articles
   const { error: chordError } = await supabase
     .from('chord_articles')
     .update({ content: chordContent })
@@ -73,5 +67,23 @@ export const updateExistingSong = async (songId, songData, chordContent) => {
 
   if (chordError) throw chordError;
 
+  return true;
+};
+
+export const deleteSong = async (id) => {
+  const supabase = createClient();
+  
+  // Hapus dari database
+  const { error } = await supabase
+    .from('songs')
+    .delete()
+    .eq('id', id);
+
+  // Jika ada error (misal RLS memblokir), lempar error tersebut ke catch
+  if (error) {
+    console.error("Supabase Delete Error:", error);
+    throw error; 
+  }
+  
   return true;
 };

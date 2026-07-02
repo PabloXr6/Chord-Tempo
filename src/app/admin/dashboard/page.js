@@ -3,10 +3,19 @@
 import React from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Loader2 } from 'lucide-react'; // Tambahkan Loader2
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth(); // Kita ambil loading dari AuthContext
+
+  // Jika masih loading, tampilkan indikator ringan
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <ProtectedRoute>
@@ -21,11 +30,10 @@ export default function AdminDashboardPage() {
               <p className="text-muted-foreground">
                 Selamat datang kembali, <span className="font-semibold text-foreground">{user?.email}</span>
               </p>
+              {/* Tambahkan info role agar Anda tahu state-nya sudah benar */}
+              <p className="text-xs text-primary font-mono mt-1">Role: {user?.role || 'user'}</p>
             </div>
           </div>
-          <p className="mt-4">
-            Jika Anda melihat halaman ini, berarti integrasi Supabase Auth dan Protected Route kita telah **berhasil 100%!** 🎉
-          </p>
         </div>
       </div>
     </ProtectedRoute>

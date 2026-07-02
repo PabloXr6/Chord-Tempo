@@ -1,75 +1,84 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  ExternalLink, 
-  Music2,
-  ArrowLeft
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
 import { deleteSong } from '@/lib/SongUtils';
+import {
+  ArrowLeft,
+  Edit,
+  ExternalLink,
+  Plus,
+  Search,
+  Trash2
+} from 'lucide-react';
+import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export default function AdminSongsPage() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
+  // PERBAIKAN: Menambahkan state untuk pencarian yang tadi hilang
   const [searchQuery, setSearchQuery] = useState('');
   const { supabase } = useAuth();
 
-  const fetchSongs = async () => {
+  const fetchSongs = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('songs')
-        .select('*')
+        .select('id, title, artist, bpm, time_signature, slug')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setSongs(data || []);
     } catch (error) {
+      console.error("Gagal fetch:", error);
       toast.error('Gagal memuat daftar lagu');
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
     fetchSongs();
-  }, []);
+  }, [fetchSongs]);
 
   const handleDelete = async (id, title) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus lagu "${title}"? Tindakan ini tidak dapat dibatalkan.`)) {
-      try {
-        await deleteSong(id);
-        toast.success('Lagu berhasil dihapus');
-        setSongs(songs.filter(s => s.id !== id));
-      } catch (error) {
-        toast.error('Gagal menghapus lagu');
-      }
+    if (!confirm(`Yakin ingin hapus lagu "${title}"?`)) return;
+
+    try {
+      // 1. Panggil API untuk hapus di DB
+      await deleteSong(id); 
+      
+      // 2. Update state lokal secara instan (ini tidak butuh loading ulang)
+      setSongs(prev => prev.filter(s => s.id !== id));
+      
+      toast.success('Lagu berhasil dihapus!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal menghapus lagu');
+      // Tidak perlu fetchSongs() ulang di sini jika tidak perlu
     }
   };
 
+  // Sekarang searchQuery sudah ada, filter ini akan berjalan normal
   const filteredSongs = songs.filter(s => 
-    s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.artist.toLowerCase().includes(searchQuery.toLowerCase())
+    (s.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (s.artist?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
+  
 
   return (
     <ProtectedRoute>

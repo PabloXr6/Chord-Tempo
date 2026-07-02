@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-// Pastikan menghapus ekstensi .js
 import { getPlaylists, createPlaylist, addSongToPlaylist } from '@/lib/PlaylistUtils';
 import { toast } from 'sonner';
 

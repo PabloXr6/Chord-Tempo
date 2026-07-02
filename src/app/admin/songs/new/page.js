@@ -22,7 +22,6 @@ export default function NewSongPage() {
     slug: '',
     bpm: 120,
     timeSignature: '4/4',
-    audio_url: ''
   });
   
   const [chordContent, setChordContent] = useState('');
@@ -39,16 +38,35 @@ export default function NewSongPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    
     try {
+      // 1. Simpan ke database
       await saveNewSong(formData, chordContent);
-      toast.success('Lagu berhasil ditambahkan!');
-      router.push('/admin/dashboard');
-      router.refresh();
-    } catch (error) {
-      console.error(error);
-      toast.error(error.message || 'Gagal menyimpan lagu');
-    } finally {
+      
+      // 2. Tampilkan notifikasi sukses
+      toast.success('Lagu berhasil ditambahkan! Silakan tambah lagu berikutnya.');
+      
+      // 3. RESET FORM: Kosongkan semua inputan agar siap untuk lagu baru
+      setFormData({
+        title: '',
+        artist: '',
+        slug: '',
+        bpm: 120, // Kembalikan ke default
+        timeSignature: '4/4' // Kembalikan ke default
+      });
+      
+      // CATATAN: Jika Anda menggunakan state untuk chord, pastikan juga di-reset
+      // Misalnya: setChordContent(''); 
+      
+      // 4. Matikan loading agar tombol bisa diklik lagi
       setLoading(false);
+      
+    } catch (error) {
+      console.error("Detail Error:", error); 
+      toast.error(error.message || 'Terjadi kesalahan sistem');
+      
+      // Matikan loading jika gagal, agar user bisa memperbaiki input
+      setLoading(false); 
     }
   };
 
@@ -111,15 +129,6 @@ export default function NewSongPage() {
                       onChange={(e) => setFormData({...formData, timeSignature: e.target.value})}
                     />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Audio URL (Instrumental MP3)</Label>
-                  <Input 
-                    placeholder="https://.../song.mp3" 
-                    value={formData.audio_url} 
-                    onChange={(e) => setFormData({...formData, audio_url: e.target.value})}
-                  />
-                  <p className="text-[10px] text-muted-foreground italic">Kosongkan jika hanya ingin metronom saja.</p>
                 </div>
               </CardContent>
             </Card>
