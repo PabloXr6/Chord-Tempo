@@ -1,12 +1,13 @@
 import React from 'react';
 import Link from 'next/link';
-import { Music2, Clock, Zap, ArrowRight, Activity, ListMusic } from 'lucide-react';
-import { createClient } from '@/utils/supabase/server'; // Menggunakan klien server
+import { Music2, Zap, ArrowRight, Activity } from 'lucide-react';
+import { createClient } from '@/utils/supabase/server';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import HomeSearch from '@/components/HomeSearch';
 
-// Metadata untuk menggantikan document.title (jauh lebih baik untuk SEO)
+// PENTING: Import komponen client yang baru dibuat
+import SongCatalogClient from '@/components/SongCatalogClient'; 
+
 export const metadata = {
   title: "Chord Tempo | Precision Metronome & Chords",
   description: "Aplikasi metronom dengan dukungan lirik & chord interaktif.",
@@ -15,18 +16,17 @@ export const metadata = {
 export default async function HomePage() {
   const supabase = await createClient();
 
-  // Ambil data lagu langsung di server (tanpa delay skeleton loading)
   const { data: songs, error } = await supabase
     .from('songs')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(6);
+    .limit(18); // Saran: limit dinaikkan agar fungsi centang lebih terasa
 
   const songList = songs || [];
 
   return (
     <>
-      {/* 1. DRAMATIC HERO & VISUALIZER SECTION */}
+      {/* 1. HERO SECTION TETAP SAMA */}
       <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden bg-background">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-b from-card via-background to-background z-10" />
@@ -66,19 +66,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 2. KUSTOM KOLEKSI LAGU GRID SECTION */}
+      {/* 2. SECTION GRID LAGU */}
       <section className="py-24 bg-card border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-4">
-            <div>
-              <h2 className="text-4xl font-extrabold tracking-tighter text-foreground">Jelajahi Lagu</h2>
-              <p className="text-lg text-muted-foreground">Pilih lagu dari katalog untuk langsung dimainkan dengan metronom.</p>
-            </div>
-            
-            {/* Search Bar dipindahkan ke komponen klien terpisah */}
-            <HomeSearch songs={songList} />
-          </div>
-
+          
           {songList.length === 0 ? (
             <div className="text-center py-20 bg-background rounded-3xl border border-border">
               <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
@@ -86,27 +77,10 @@ export default async function HomePage() {
               <p className="text-muted-foreground">Gunakan tombol Admin untuk menambah lagu pertama Anda.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {songList.map(song => (
-                <Link key={song.id} href={`/song/${song.slug}`} className="group">
-                  <Card className="bg-background border border-border group-hover:border-primary/50 transition-all duration-300 hover:-translate-y-2 h-full flex flex-col justify-between overflow-hidden rounded-2xl">
-                    <CardContent className="p-5 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold group-hover:text-primary transition-colors line-clamp-2 leading-tight">
-                          {song.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-1">{song.artist}</p>
-                      </div>
-                      <div className="flex items-center gap-3 pt-4 border-t border-border mt-5 text-xs text-muted-foreground group-hover:text-primary transition-colors">
-                        <Clock className="w-4 h-4" />
-                        <span>{song.bpm} BPM</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
+            /* Semua Header, Search Bar, dan Grid dipindah ke sini */
+            <SongCatalogClient songs={songList} />
           )}
+
         </div>
       </section>
     </>

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation'; // TAMBAHKAN INI
 
 const AuthContext = createContext({});
 
@@ -10,6 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
+  const router = useRouter(); 
 
   useEffect(() => {
     let mounted = true;
@@ -45,26 +47,25 @@ export const AuthProvider = ({ children }) => {
     };
   }, [supabase]);
 
-  // LOGIN YANG SUDAH DIOPTIMASI
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     
-    // THE MAGIC FIX: Paksa browser memuat ulang dari server (bukan dari cache Next.js)
-    window.location.href = '/admin/dashboard'; 
+    router.push('/'); 
+    router.refresh();
     return data;
   };
 
-  // LOGOUT YANG SUDAH DIOPTIMASI
   const logout = async () => {
-    await supabase.auth.signOut();
+    // Tambahkan penangkap error agar kita tahu jika Supabase gagal
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     
-    // Hapus state lokal
+    // Hapus state
     setUser(null);
     setSession(null);
     
-    // THE MAGIC FIX: Paksa kembali ke halaman login dan bersihkan cache memory
-    window.location.href = '/login';
+    // HAPUS router.push dan router.refresh dari sini!
   };
 
   const value = {

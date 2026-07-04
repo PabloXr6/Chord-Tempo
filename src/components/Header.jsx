@@ -29,6 +29,9 @@ const Header = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const searchRef = useRef(null);
 
+  // --- PERBAIKAN: State untuk mengontrol buka/tutup menu HP ---
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -39,7 +42,6 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Logika Auto-Search ke Supabasee
   useEffect(() => {
     const searchSongs = async () => {
       if (searchQuery.trim().length < 2) {
@@ -47,7 +49,6 @@ const Header = () => {
         return;
       }
       try {
-        // Menggunakan ilike untuk pencarian case-insensitive di Supabase
         const { data, error } = await supabase
           .from('songs')
           .select('id, title, artist, slug')
@@ -70,19 +71,35 @@ const Header = () => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim() && searchResults.length > 0) {
-      router.push(`/song/${searchResults[0].slug}`);
-      setShowDropdown(false);
-      setSearchQuery('');
+      setShowDropdown(true);
     }
   };
 
   const handleLogout = async () => {
-    toast.loading('Sedang keluar...', { id: 'logout' });
+    // 1. Tutup menu mobile (jika dibuka dari HP)
+    setIsMobileMenuOpen(false);
+    
+    // 2. Munculkan toast loading
+    const toastId = toast.loading('Sedang keluar...');
+    
     try {
+      // 3. Tunggu proses hapus sesi di Supabase selesai
       await logout();
-      toast.success('Berhasil logout!', { id: 'logout' });
+      
+      // 4. Ubah toast menjadi sukses SEBELUM pindah halaman
+      toast.success('Berhasil logout!', { id: toastId });
+      
+      // 5. Pindah ke halaman login
+      router.push('/login');
+      
+      // 6. Beri jeda sangat singkat agar router.push selesai, baru bersihkan cache server
+      setTimeout(() => {
+        router.refresh();
+      }, 100);
+
     } catch (error) {
-      toast.error('Gagal logout', { id: 'logout' });
+      console.error("Logout error:", error);
+      toast.error('Gagal logout, silakan coba lagi', { id: toastId });
     }
   };
 
@@ -173,11 +190,6 @@ const Header = () => {
                           <Plus className="w-4 h-4 mr-2" /> Tambah Lagu
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin/logs" className="cursor-pointer">
-                          <Settings className="w-4 h-4 mr-2" /> System Logs
-                        </Link>
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -212,7 +224,8 @@ const Header = () => {
 
           {/* Mobile Menu */}
           <div className="md:hidden flex items-center">
-            <Sheet>
+            {/* PERBAIKAN: Tambahkan open dan onOpenChange untuk mengontrol Sidebar */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-foreground">
                   <Menu className="w-6 h-6" />
@@ -239,7 +252,11 @@ const Header = () => {
                         <Link
                           key={song.id}
                           href={`/song/${song.slug}`}
-                          onClick={() => setSearchQuery('')}
+                          // PERBAIKAN: Tutup menu saat hasil pencarian diklik
+                          onClick={() => {
+                            setSearchQuery('');
+                            setIsMobileMenuOpen(false);
+                          }}
                           className="block px-4 py-3 hover:bg-muted border-b border-border last:border-0"
                         >
                           <div className="font-semibold text-primary">{song.title}</div>
@@ -250,34 +267,29 @@ const Header = () => {
                   )}
 
                   <nav className="flex flex-col space-y-2">
-                    <Link href="/playlists" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                    {/* PERBAIKAN: Tambahkan onClick={() => setIsMobileMenuOpen(false)} ke SETIAP link */}
+                    <Link href="/playlists" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
                       <ListMusic className="w-5 h-5 mr-3" /> Playlists
                     </Link>
                     {!isAuthenticated ? (
-                      <Link href="/login" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                      <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
                         Login
                       </Link>
                     ) : (
                       <>
-                        <Link href="/playlists" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
-                          <ListMusic className="w-5 h-5 mr-3" /> Dashboard
-                        </Link>
                         {isAdmin && (
                           <>
                             <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-4">
                               Admin Panel
                             </div>
-                            <Link href="/admin/dashboard" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                            <Link href="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
                               <Activity className="w-5 h-5 mr-3" /> Dashboard
                             </Link>
-                            <Link href="/admin/songs" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                            <Link href="/admin/songs" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
                               <ListMusic className="w-5 h-5 mr-3" /> List Lagu
                             </Link>
-                            <Link href="/admin/songs/new" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
+                            <Link href="/admin/songs/new" onClick={() => setIsMobileMenuOpen(false)} className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
                               <Plus className="w-5 h-5 mr-3" /> Tambah Lagu
-                            </Link>
-                            <Link href="/admin/logs" className="px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground flex items-center">
-                              <Settings className="w-5 h-5 mr-3" /> System Logs
                             </Link>
                           </>
                         )}

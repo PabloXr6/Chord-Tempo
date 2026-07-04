@@ -26,7 +26,6 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
-      router.push('/playlists');
     } catch (err) {
       setError(err.message || 'Invalid email or password');
     } finally {
