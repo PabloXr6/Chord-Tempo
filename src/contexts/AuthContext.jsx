@@ -1,8 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation'; // TAMBAHKAN INI
+import { useRouter } from 'next/navigation';
 
 const AuthContext = createContext({});
 
@@ -12,6 +12,23 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
   const router = useRouter(); 
+  
+  // Ref untuk menyimpan timer auto-logout
+  const logoutTimerRef = useRef(null);
+
+  // Pindahkan logout ke atas agar bisa dipanggil oleh timer
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Supabase signout error (diabaikan):", error);
+    } finally {
+      // Pastikan state selalu bersih apapun yang terjadi
+      setUser(null);
+      setSession(null);
+      if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -22,7 +39,17 @@ export const AuthProvider = ({ children }) => {
       setSession(session);
       const currentUser = session?.user ?? null;
       
+      // Bersihkan timer lama jika status berubah
+      if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+      
       if (currentUser) {
+        // --- FITUR AUTO LOGOUT 2 JAM (7.200.000 ms) ---
+        logoutTimerRef.current = setTimeout(async () => {
+          await logout();
+          window.location.href = '/login?expired=true'; // Hard redirect otomatis
+        }, 7200000); 
+        // ----------------------------------------------
+
         try {
           const { data: profile } = await supabase
             .from('profiles')
@@ -44,6 +71,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
     };
   }, [supabase]);
 
@@ -54,18 +82,6 @@ export const AuthProvider = ({ children }) => {
     router.push('/'); 
     router.refresh();
     return data;
-  };
-
-  const logout = async () => {
-    // Tambahkan penangkap error agar kita tahu jika Supabase gagal
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    
-    // Hapus state
-    setUser(null);
-    setSession(null);
-    
-    // HAPUS router.push dan router.refresh dari sini!
   };
 
   const value = {

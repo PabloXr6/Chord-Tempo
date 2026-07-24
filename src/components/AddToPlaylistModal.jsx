@@ -9,10 +9,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { getPlaylists, createPlaylist, addSongToPlaylist } from '@/lib/PlaylistUtils';
+// getPlaylists dihapus dari import karena kita akan query langsung untuk menghindari cache
+import { createPlaylist, addSongToPlaylist } from '@/lib/PlaylistUtils'; 
 import { toast } from 'sonner';
 
-// TAMBAHAN: Menerima prop selectedSongIds untuk mode bulk
 const AddToPlaylistModal = ({ open, onOpenChange, songData, selectedSongIds = [], currentBPM, currentTimeSignature }) => {
   const [playlists, setPlaylists] = useState([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState('');
@@ -22,47 +22,67 @@ const AddToPlaylistModal = ({ open, onOpenChange, songData, selectedSongIds = []
   const [saveCustomTimeSig, setSaveCustomTimeSig] = useState(false);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { isAuthenticated } = useAuth();
+  
+  // Ambil instance supabase dari context agar selalu tersambung dengan sesi saat ini
+  const { isAuthenticated, supabase } = useAuth();
   const router = useRouter();
 
-  // Deteksi apakah ini mode "Banyak Lagu" (Bulk)
   const isBulkMode = selectedSongIds && selectedSongIds.length > 0;
 
   useEffect(() => {
-    if (open) {
-      const loadPlaylists = async () => {
-        if (!isAuthenticated) {
-          router.push('/login');
-          onOpenChange(false);
-          return;
-        }
-        try {
-          const loaded = await getPlaylists();
-          setPlaylists(loaded || []);
-          if (loaded && loaded.length > 0) {
-            setSelectedPlaylistId(loaded[0].id);
+    let isMounted = true;
+
+    // Fungsi fetch data langsung (anti-cache)
+    const fetchFreshPlaylists = async () => {
+      if (!isAuthenticated) {
+        router.push('/login');
+        onOpenChange(false);
+        return;
+      }
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Tarik data langsung dari Supabase setiap kali modal terbuka!
+        const { data, error } = await supabase
+          .from('playlists')
+          .select('id, name')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (isMounted) {
+          setPlaylists(data || []);
+          if (data && data.length > 0) {
+            setSelectedPlaylistId(data[0].id);
           } else {
             setSelectedPlaylistId('new');
           }
-        } catch (error) {
-          console.error("Error loading playlists:", error);
-          if (isAuthenticated) {
-            toast.error("Gagal memuat daftar playlist");
-          }
         }
-      };
-      
-      loadPlaylists();
+      } catch (error) {
+        console.error("Error loading fresh playlists:", error);
+        if (isAuthenticated && isMounted) {
+          toast.error("Gagal memuat daftar playlist");
+        }
+      }
+    };
+
+    if (open) {
+      // Panggil fungsi saat modal terbuka
+      fetchFreshPlaylists();
     } else {
-      const timer = setTimeout(() => {
-        setNewPlaylistName('');
-        setSaveCustomBPM(false);
-        setSaveCustomTimeSig(false);
-      }, 0);
-      
-      return () => clearTimeout(timer);
+      // Reset form seketika saat modal ditutup
+      setNewPlaylistName('');
+      setSaveCustomBPM(false);
+      setSaveCustomTimeSig(false);
     }
-  }, [open, isAuthenticated, router]); 
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open, isAuthenticated, router, supabase, onOpenChange]); 
 
   const handleAdd = async () => {
     setIsSubmitting(true);
@@ -81,21 +101,18 @@ const AddToPlaylistModal = ({ open, onOpenChange, songData, selectedSongIds = []
 
       // LOGIKA PENYIMPANAN
       if (isBulkMode) {
-        // MODE BANYAK LAGU: Lakukan perulangan untuk menyimpan semua lagu
         const promises = selectedSongIds.map(id => 
           addSongToPlaylist(targetId, {
             song_id: id, 
-            custom_bpm: null, // Jangan save custom BPM untuk mode banyak lagu
+            custom_bpm: null, 
             custom_time_signature: null
           })
         );
         
-        // Eksekusi semua secara bersamaan
         await Promise.all(promises);
         toast.success(`${selectedSongIds.length} Lagu berhasil ditambahkan!`);
         
       } else if (songData) {
-        // MODE TUNGGAL (Seperti sebelumnya)
         const songToAdd = {
           song_id: songData.id, 
           custom_bpm: saveCustomBPM ? currentBPM : null,
@@ -153,7 +170,6 @@ const AddToPlaylistModal = ({ open, onOpenChange, songData, selectedSongIds = []
             )}
           </div>
 
-          {/* Sembunyikan Opsi Custom BPM jika user sedang mode Banyak Lagu */}
           {!isBulkMode && (
             <div className="space-y-4 pt-4 border-t border-border">
               <Label className="text-base">Custom Settings (Optional)</Label>

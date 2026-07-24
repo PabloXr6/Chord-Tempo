@@ -17,7 +17,6 @@ export const useMetronomeEngine = (audioUrl = null, initialOffset = 0) => {
   const tapTimesRef = useRef([]);
   const beatRef = useRef(0);
 
-  // 1. Inisialisasi Audio Context
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -27,7 +26,6 @@ export const useMetronomeEngine = (audioUrl = null, initialOffset = 0) => {
     }
   }, []);
 
-  // Cleanup Audio Context saat unmount
   useEffect(() => {
     return () => {
       if (audioContextRef.current) {
@@ -36,27 +34,16 @@ export const useMetronomeEngine = (audioUrl = null, initialOffset = 0) => {
     };
   }, []);
 
-  // 2. Watcher: Pantau perubahan audioUrl dari Supabase
   useEffect(() => {
     if (audioUrl) {
-      console.log("Hook mendeteksi Audio URL baru:", audioUrl);
-      
-      // Bersihkan track lama jika ada
       if (audioTrackRef.current) {
         audioTrackRef.current.pause();
         audioTrackRef.current = null;
       }
-
       const audio = new Audio(audioUrl);
-      audio.volume = musicVolume / 100;
       audio.preload = "auto";
-      
-      audio.onerror = (e) => console.error("Gagal memuat MP3 dari Supabase. Cek Public Access di Storage:", e);
-      audio.oncanplaythrough = () => console.log("MP3 Siap diputar!");
-
       audioTrackRef.current = audio;
     }
-
     return () => {
       if (audioTrackRef.current) {
         audioTrackRef.current.pause();
@@ -65,7 +52,6 @@ export const useMetronomeEngine = (audioUrl = null, initialOffset = 0) => {
     };
   }, [audioUrl]); 
 
-  // 3. Click Sound Logic
   const playClick = useCallback((time, beat) => {
     if (!audioContextRef.current) return;
     const osc = audioContextRef.current.createOscillator();
@@ -79,9 +65,6 @@ export const useMetronomeEngine = (audioUrl = null, initialOffset = 0) => {
     osc.stop(time + 0.1);
   }, [volume]);
 
-  // 4. Scheduler Metronome
-  // 4. Scheduler Metronome
-  // Kita hapus pemanggilan requestAnimationFrame dari dalam sini
   const scheduler = useCallback(() => {
     while (nextNoteTimeRef.current < audioContextRef.current.currentTime + 0.1) {
       const beatsPerMeasure = parseInt(timeSignature.split('/')[0]);
@@ -93,37 +76,30 @@ export const useMetronomeEngine = (audioUrl = null, initialOffset = 0) => {
     }
   }, [bpm, timeSignature, playClick]);
 
-  // 5. Motor Loop (Ini yang menjalankan scheduler secara berulang)
   useEffect(() => {
     let timerID;
-
     const tick = () => {
       if (isPlaying) {
         scheduler();
-        timerID = requestAnimationFrame(tick); // Memanggil tick, bukan scheduler langsung
+        timerID = requestAnimationFrame(tick);
       }
     };
-
     if (isPlaying) {
       timerID = requestAnimationFrame(tick);
     } else {
       cancelAnimationFrame(timerID);
     }
-
     return () => cancelAnimationFrame(timerID);
   }, [isPlaying, scheduler]);
 
-  // 5. Playback Controls
   const play = useCallback(() => {
     initAudio();
-    
     if (isPlaying) return;
 
     if (audioTrackRef.current) {
       audioTrackRef.current.play().catch(e => console.error("Playback error:", e));
-    } else {
-      console.warn("Play ditekan tapi audioTrack belum siap (URL null).");
     }
+    // Pesan error kuning dihapus dari sini karena kita memang tidak pakai lagu mp3
 
     const offsetInSeconds = offset / 1000;
     nextNoteTimeRef.current = audioContextRef.current.currentTime + 0.05 + offsetInSeconds;
@@ -148,7 +124,6 @@ export const useMetronomeEngine = (audioUrl = null, initialOffset = 0) => {
     setCurrentBeat(0);
   }, []);
 
-  // 6. Sync Music Volume
   useEffect(() => {
     if (audioTrackRef.current) {
       audioTrackRef.current.volume = musicVolume / 100;
