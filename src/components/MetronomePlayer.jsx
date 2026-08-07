@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Square, Volume2, Zap, Settings2, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -8,7 +8,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const MetronomePlayer = ({ 
   defaultBPM = 120, 
@@ -27,16 +26,24 @@ const MetronomePlayer = ({
   const [volume, setVolume] = useState([80]);
   const [subdivisions, setSubdivisions] = useState(defaultSubdivisions);
   const [accentFirst, setAccentFirst] = useState(defaultAccentFirst);
+  
+  // State Visual
   const [currentBeat, setCurrentBeat] = useState(0);
   const [beatPulse, setBeatPulse] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [visualFlash, setVisualFlash] = useState(true);
 
+  // System Refs
   const audioContextRef = useRef(null);
   const nextNoteTimeRef = useRef(0);
   const currentNoteRef = useRef(0);
   const timerIdRef = useRef(null);
   const tapTimesRef = useRef([]);
+  
+  // OPTIMASI VISUAL: Antrean render visual menggunakan requestAnimationFrame
+  const notesQueueRef = useRef([]);
+  const animationFrameRef = useRef(null);
+  const pulseEndTimeRef = useRef(0);
   
   // Audio buffers
   const buffersRef = useRef({
@@ -47,22 +54,7 @@ const MetronomePlayer = ({
 
   const beatsPerMeasure = parseInt(timeSignature.split('/')[0]);
 
-  useEffect(() => {
-    setBpm(defaultBPM);
-  }, [defaultBPM]);
-
-  useEffect(() => {
-    setTimeSignature(defaultTimeSignature);
-  }, [defaultTimeSignature]);
-
-  useEffect(() => {
-    setAccentFirst(defaultAccentFirst);
-  }, [defaultAccentFirst]);
-
-  useEffect(() => {
-    setSubdivisions(defaultSubdivisions);
-  }, [defaultSubdivisions]);
-
+  // Sync callbacks to parent (if any)
   useEffect(() => {
     if (onBPMChange) onBPMChange(bpm);
   }, [bpm, onBPMChange]);
@@ -91,12 +83,9 @@ const MetronomePlayer = ({
     if (subdivisionSound) loadSound(subdivisionSound, 'subdivision');
 
     return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-      if (timerIdRef.current) {
-        clearTimeout(timerIdRef.current);
-      }
+      if (audioContextRef.current) audioContextRef.current.close();
+      if (timerIdRef.current) clearTimeout(timerIdRef.current);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
   }, [downbeatSound, regularBeatSound, subdivisionSound]);
 
@@ -116,7 +105,6 @@ const MetronomePlayer = ({
       source.connect(gainNode);
       source.start(ctx.currentTime);
     } else {
-      // Fallback to oscillator
       const oscillator = ctx.createOscillator();
       oscillator.connect(gainNode);
       oscillator.frequency.value = frequency;
@@ -146,16 +134,9 @@ const MetronomePlayer = ({
 
     playSound(type, frequency);
 
-    // Visual sync
+    // OPTIMASI: Masukkan antrean visual saja, jangan panggil state (setTimeout) di sini!
     if (!isSubdivision) {
-      const timeToNote = (time - audioContextRef.current.currentTime) * 1000;
-      setTimeout(() => {
-        setCurrentBeat(beatNumber);
-        if (visualFlash) {
-          setBeatPulse(true);
-          setTimeout(() => setBeatPulse(false), 100);
-        }
-      }, Math.max(0, timeToNote));
+      notesQueueRef.current.push({ time, beatNumber });
     }
   };
 
@@ -175,41 +156,75 @@ const MetronomePlayer = ({
     timerIdRef.current = setTimeout(scheduler, 25);
   };
 
+  // MESIN VISUAL: Menarik data antrean dengan kecepatan layar (60Hz) agar tidak berat
+  const drawVisuals = useCallback(function loop() { // <-- Ubah menjadi function loop()
+    if (!audioContextRef.current) return;
+    const currentTime = audioContextRef.current.currentTime;
+
+    let newBeat = null;
+    
+    // Ambil data nada yang sudah lewat untuk digambar di layar
+    while (notesQueueRef.current.length && notesQueueRef.current[0].time <= currentTime) {
+      newBeat = notesQueueRef.current.shift().beatNumber;
+    }
+
+    if (newBeat !== null) {
+      setCurrentBeat(newBeat);
+      if (visualFlash) {
+        setBeatPulse(true);
+        pulseEndTimeRef.current = currentTime + 0.1; // Kedip selama 100ms
+      }
+    } else if (pulseEndTimeRef.current && currentTime >= pulseEndTimeRef.current) {
+      // Matikan kedipan setelah 100ms
+      setBeatPulse(false);
+      pulseEndTimeRef.current = 0;
+    }
+
+    // Panggil 'loop' (dirinya sendiri), BUKAN 'drawVisuals'
+    animationFrameRef.current = requestAnimationFrame(loop); 
+  }, [visualFlash]);
+
   const handlePlayPause = () => {
     if (!isPlaying) {
       const ctx = audioContextRef.current;
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
+      if (ctx.state === 'suspended') ctx.resume();
+      
       currentNoteRef.current = 0;
       nextNoteTimeRef.current = ctx.currentTime + 0.05;
+      notesQueueRef.current = [];
+      pulseEndTimeRef.current = 0;
+      
       scheduler();
       setIsPlaying(true);
+      
+      // Jalankan mesin visual!
+      animationFrameRef.current = requestAnimationFrame(drawVisuals);
     } else {
-      if (timerIdRef.current) {
-        clearTimeout(timerIdRef.current);
-      }
+      if (timerIdRef.current) clearTimeout(timerIdRef.current);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      
       setIsPlaying(false);
       setCurrentBeat(0);
+      setBeatPulse(false);
     }
   };
 
   const handleStop = () => {
-    if (timerIdRef.current) {
-      clearTimeout(timerIdRef.current);
-    }
+    if (timerIdRef.current) clearTimeout(timerIdRef.current);
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    
     setIsPlaying(false);
     setCurrentBeat(0);
+    setBeatPulse(false);
     currentNoteRef.current = 0;
+    notesQueueRef.current = [];
   };
 
   const handleTapTempo = () => {
     const now = Date.now();
     tapTimesRef.current.push(now);
 
-    if (tapTimesRef.current.length > 4) {
-      tapTimesRef.current.shift();
-    }
+    if (tapTimesRef.current.length > 4) tapTimesRef.current.shift();
 
     if (tapTimesRef.current.length >= 2) {
       const intervals = [];

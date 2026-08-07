@@ -70,18 +70,21 @@ const AddToPlaylistModal = ({ open, onOpenChange, songData, selectedSongIds = []
     };
 
     if (open) {
-      // Panggil fungsi saat modal terbuka
       fetchFreshPlaylists();
     } else {
-      // Reset form seketika saat modal ditutup
-      setNewPlaylistName('');
-      setSaveCustomBPM(false);
-      setSaveCustomTimeSig(false);
-    }
+      const resetTimer = setTimeout(() => {
+        if (isMounted) {
+          setNewPlaylistName('');
+          setSaveCustomBPM(false);
+          setSaveCustomTimeSig(false);
+        }
+      }, 300);
 
-    return () => {
-      isMounted = false;
-    };
+      return () => {
+        isMounted = false;
+        clearTimeout(resetTimer); // Bersihkan memori timer
+      };
+    }
   }, [open, isAuthenticated, router, supabase, onOpenChange]); 
 
   const handleAdd = async () => {

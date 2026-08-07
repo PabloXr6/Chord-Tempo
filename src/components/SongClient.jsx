@@ -22,7 +22,7 @@ import AddToPlaylistModal from '@/components/AddToPlaylistModal';
 export default function SongClient({ song }) {
   const router = useRouter();
   const chordArticle = song?.chord_articles?.[0] || null;
-  const [visualEffects, setVisualEffects] = useState(true);
+  const [visualEffects] = useState(true);
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
 
   // Inisialisasi Metronome Engine dengan URL Audio
